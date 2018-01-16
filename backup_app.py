@@ -5,6 +5,7 @@ import filecmp
 import time
 import shutil
 import send2trash
+import tkinter as tk
 
 STARTING_DIRECTORY = '.\Demo Source Location'
 BACKUP_DIRECTORY = '.\Demo Backup Location'
@@ -30,71 +31,6 @@ def showTree(directory):
         for fname in fileList:
             print('\t{0}'.format(fname))
 
-def examineReport(dira,dirb,report):
-    examinedReport = report
-    aonly = report['added_files']
-    bonly = report['removed_files']
-    moved = []
-    
-    for i,added in enumerate(aonly):
-        new_file = os.path.join(dira,added)
-        if os.path.isfile(new_file):
-            for j,removed in enumerate(bonly):
-                old_file = os.path.join(dirb,removed)
-                if os.path.isfile(old_file):
-                    if filecmp.cmp(new_file, old_file, shallow=False):
-                        old_path = os.path.join(dirb,bonly[j])
-                        new_path = os.path.join(dirb,aonly[i])
-                        moved.append((old_path,new_path))
-                        del aonly[i]
-                        del bonly[j]
-        elif os.path.isdir(new_file):
-            for j,removed in enumerate(bonly):
-                old_file = os.path.join(dirb,removed)
-                if os.path.isdir(old_file):
-                    if added == removed:
-                        old_path = os.path.join(dirb,bonly[j])
-                        new_path = os.path.join(dirb,aonly[i])
-                        moved.append((old_path,new_path))
-                        del aonly[i]
-                        del bonly[j]
-
-    examinedReport['moved_files'] = moved
-    return examinedReport
-                    
-def displayExaminedResults(report):
-    same = report['matched_files']
-    diff = report['mismatched_files']
-    aonly = report['added_files']
-    bonly = report['removed_files']
-    errors = report['errors']
-    moved = report['moved_files']
-
-    if diff == aonly == bonly == errors == moved == []:
-        print('\nNo Changes Detected!')
-    else:
-        if moved != []:
-            print('\nThese files have moved:')
-            for item in moved:
-                print(item[0],'-->',item[1])
-        if diff != []:
-            print('\nThese files have changed:')
-            for item in diff:
-                print(item)
-        if aonly != []:
-            print('\nThese files are new or moved:')
-            for item in aonly:
-                print(item)
-        if bonly != []:
-            print('\nThese files have been deleted or moved:')
-            for item in bonly:
-                print(item)
-        if errors != []:
-            print('\nThese files had errors (check manually!):')
-            for item in errors:
-                print(item)
-        
-            
 def compareDirectories(dira,dirb,recursing=False):
     simple_report = {}
     #compare directories (This uses shallow comparison!!)
@@ -194,22 +130,113 @@ def make_changes(dira,dirb,report):
     return "quit"
 
 
-if __name__ == '__main__':
-    start = time.time()
-    report = compareDirectories(STARTING_DIRECTORY, BACKUP_DIRECTORY)
-    examined_report = examineReport(STARTING_DIRECTORY, BACKUP_DIRECTORY,report)
-    displayExaminedResults(examined_report)
 
-    print('\nruntime: {0} seconds'.format(time.time()-start))
-    next_act = "start"
-    while next_act != "quit":
-        if next_act == "start":
-            next_act = make_changes(STARTING_DIRECTORY,BACKUP_DIRECTORY,examined_report)
-            next_act = "recheck"
-        elif next_act == "recheck":
-            examined_report = examineReport(STARTING_DIRECTORY, BACKUP_DIRECTORY,examined_report)
-            next_act = "start"
-        force_quit = input("type q to quit!")
-        if force_quit == "q":
-            next_act = "quit"
+class App(object):
+    def __init__(self, master, srcdir, bakdir):
+        self.master = master
+        self.source_dir = srcdir
+        self.backup_dir = bakdir
+        self.make_window()
+
+    def make_window(self):
+         self.master.winfo_toplevel().title("Backup Master")
+
+         self.scanButton = tk.Button(self.master,text="Scan",command=self.scan)
+
+         self.scanButton.pack()
+
+    def scan(self):
+        start = time.time()
+        report = compareDirectories(self.source_dir,self.backup_dir)
+        self.examined_report = self.examineReport(report)
+        self.displayExaminedResults()
+        runtime = time.time()-start
+        print('\nruntime: {0} seconds'.format(runtime))
+
+    def displayExaminedResults(self):
+        same = self.examined_report['matched_files']
+        diff = self.examined_report['mismatched_files']
+        aonly = self.examined_report['added_files']
+        bonly = self.examined_report['removed_files']
+        errors = self.examined_report['errors']
+        moved = self.examined_report['moved_files']
+
+        if diff == aonly == bonly == errors == moved == []:
+            print('\nNo Changes Detected!')
+        else:
+            if moved != []:
+                print('\nThese files have moved:')
+                for item in moved:
+                    print(item[0],'-->',item[1])
+            if diff != []:
+                print('\nThese files have changed:')
+                for item in diff:
+                    print(item)
+            if aonly != []:
+                print('\nThese files are new or moved:')
+                for item in aonly:
+                    print(item)
+            if bonly != []:
+                print('\nThese files have been deleted or moved:')
+                for item in bonly:
+                    print(item)
+            if errors != []:
+                print('\nThese files had errors (check manually!):')
+                for item in errors:
+                    print(item)
+
+    def examineReport(self,report):
+        dira = self.source_dir
+        dirb = self.backup_dir
+        examinedReport = report
+        aonly = report['added_files']
+        bonly = report['removed_files']
+        moved = []
+        
+        for i,added in enumerate(aonly):
+            new_file = os.path.join(dira,added)
+            if os.path.isfile(new_file):
+                for j,removed in enumerate(bonly):
+                    old_file = os.path.join(dirb,removed)
+                    if os.path.isfile(old_file):
+                        if filecmp.cmp(new_file, old_file, shallow=False):
+                            old_path = os.path.join(dirb,bonly[j])
+                            new_path = os.path.join(dirb,aonly[i])
+                            moved.append((old_path,new_path))
+                            del aonly[i]
+                            del bonly[j]
+            elif os.path.isdir(new_file):
+                for j,removed in enumerate(bonly):
+                    old_file = os.path.join(dirb,removed)
+                    if os.path.isdir(old_file):
+                        if added == removed:
+                            old_path = os.path.join(dirb,bonly[j])
+                            new_path = os.path.join(dirb,aonly[i])
+                            moved.append((old_path,new_path))
+                            del aonly[i]
+                            del bonly[j]
+
+        examinedReport['moved_files'] = moved
+        return examinedReport
+
+if __name__ == '__main__':
+
+    root = tk.Tk()
+    app = App(root, STARTING_DIRECTORY, BACKUP_DIRECTORY)
+    root.mainloop()
+    
+##    examined_report = scan(STARTING_DIRECTORY, BACKUP_DIRECTORY)
+
+    
+##    next_act = "start"
+##    while next_act != "quit":
+##        if next_act == "start":
+##            next_act = make_changes(STARTING_DIRECTORY,BACKUP_DIRECTORY,examined_report)
+##            next_act = "recheck"
+##        elif next_act == "recheck":
+##            examined_report = examineReport(STARTING_DIRECTORY, BACKUP_DIRECTORY,examined_report)
+##            next_act = "start"
+##        force_quit = input("type q to quit!")
+##        if force_quit == "q":
+##            next_act = "quit"
     
