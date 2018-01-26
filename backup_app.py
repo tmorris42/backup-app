@@ -7,6 +7,9 @@ import shutil
 import send2trash
 import tkinter as tk
 
+#### If a directory is created/deleted check to see if the contents of the new dir
+#### matches the contents of the deleted one
+
 STARTING_DIRECTORY = '.\Demo Source Location'
 BACKUP_DIRECTORY = '.\Demo Backup Location'
 
@@ -135,16 +138,60 @@ class App(object):
     def __init__(self, master, srcdir, bakdir):
         self.master = master
         self.source_dir = srcdir
+        self.sourceDirVar = tk.StringVar()
         self.backup_dir = bakdir
+        self.backupDirVar = tk.StringVar()
+        self.refresh_directory_variables()
         self.make_window()
+        self.examined_report=dict()
 
     def make_window(self):
-         self.master.winfo_toplevel().title("Backup Master")
+        self.master.winfo_toplevel().title("Backup Master")
+        self.filebar = tk.Menu(self.master)
+        self.filemenu = tk.Menu(self.filebar,tearoff=0)
+        self.filebar.add_cascade(label="File", menu=self.filemenu)
 
-         self.scanButton = tk.Button(self.master,text="Scan",command=self.scan)
+        self.mid_section = tk.Frame(self.master)
+        self.top_section = tk.Frame(self.master)
+        self.source_field = tk.Listbox(self.mid_section,width=25)
+        self.backup_field = tk.Listbox(self.mid_section,width=25)
 
-         self.scanButton.pack()
+        self.buttons = tk.Frame(self.mid_section)
+        bw=20 #button width
+        self.scanButton = tk.Button(self.buttons,text="Scan",command=self.scan,width=bw)
+        self.moveButton = tk.Button(self.buttons,text="Move in Backup",command=lambda: move_files_in_b(self.backup_dir,self.examined_report['moved_files']),width=bw)
+        self.copyButton = tk.Button(self.buttons,text="Copy to Backup",command=lambda: copy_files_from_a_to_b(self.source_dir,self.backup_dir,self.examined_report['added_files']),width=bw)
+        self.removeButton = tk.Button(self.buttons,text="Remove from Backup",command=lambda: delete_files_from_b(self.backup_dir,self.examined_report['removed_files']),width=bw)
+        self.updateButton = tk.Button(self.buttons,text="Update in Backup",command=lambda: update_files_a_to_b(self.source_dir,self.backup_dir,self.examined_report['mismatched_files']),width=bw)
 
+        self.source_field.pack(side=tk.LEFT)
+        self.scanButton.pack()
+        self.moveButton.pack()
+        self.copyButton.pack()
+        self.removeButton.pack()
+        self.updateButton.pack()
+        self.buttons.pack(side=tk.LEFT)
+        self.backup_field.pack(side=tk.LEFT)
+
+        self.sourceButton = tk.Button(self.top_section,text="Open Source Folder",command=self.opensource)
+        self.sourceLocViewer = tk.Entry(self.top_section, textvariable=self.sourceDirVar,state="readonly")
+        self.sourceButton.pack(side=tk.LEFT)
+        self.sourceLocViewer.pack(side=tk.LEFT)
+
+        self.top_section.pack(side=tk.TOP)
+        self.mid_section.pack(side=tk.TOP)
+
+        self.master.config(menu=self.filebar)
+
+    def opensource(self):
+        file = tk.filedialog.askdirectory(parent=self.master,title='Open Source Directory...')
+        self.source_dir = file
+        self.refresh_directory_variables()
+
+    def refresh_directory_variables(self):
+        self.sourceDirVar.set(self.source_dir)
+        self.backupDirVar.set(self.backup_dir)
+        
     def scan(self):
         start = time.time()
         report = compareDirectories(self.source_dir,self.backup_dir)
@@ -161,6 +208,8 @@ class App(object):
         errors = self.examined_report['errors']
         moved = self.examined_report['moved_files']
 
+        self.source_field.delete(0,tk.END)
+        self.backup_field.delete(0,tk.END)
         if diff == aonly == bonly == errors == moved == []:
             print('\nNo Changes Detected!')
         else:
@@ -168,18 +217,22 @@ class App(object):
                 print('\nThese files have moved:')
                 for item in moved:
                     print(item[0],'-->',item[1])
+                    self.backup_field.insert(tk.END,item[0]+'-->'+item[1])
             if diff != []:
                 print('\nThese files have changed:')
                 for item in diff:
                     print(item)
+                    self.backup_field.insert(tk.END,item)
             if aonly != []:
                 print('\nThese files are new or moved:')
                 for item in aonly:
                     print(item)
+                    self.backup_field.insert(tk.END,item)
             if bonly != []:
                 print('\nThese files have been deleted or moved:')
                 for item in bonly:
                     print(item)
+                    self.backup_field.insert(tk.END,item)
             if errors != []:
                 print('\nThese files had errors (check manually!):')
                 for item in errors:
