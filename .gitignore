@@ -2,3 +2,4 @@ env/
 Demo*
 __*
 log.txt
+.pylintrc

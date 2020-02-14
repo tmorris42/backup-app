@@ -1,277 +1,338 @@
 #!usr/bin/env python3
 
+"""This script is used to maintain an up-to-date backup folder
+
+Compare the current state of a source folder with the current state of the backup folder.
+"""
+
 import os
 import filecmp
 import time
 import shutil
 import tkinter as tk
-import tkinter.ttk as ttk
 from tkinter import filedialog
 
 import send2trash
 
-STARTING_DIRECTORY = '.\Demo Source Location'
-BACKUP_DIRECTORY = '.\Demo Backup Location'
-
 SHALLOW = True
 
-def showTree(directory):
-    rootDir = directory
-    for dirName, subdirList, fileList in os.walk(rootDir):
-        print('Found directory: {0}'.format(dirName))
-        for fname in fileList:
+def show_tree(directory):
+    """Print the directory tree."""
+    root_directory = directory
+    for directory_name, _, file_list in os.walk(root_directory):
+        print('Found directory: {0}'.format(directory_name))
+        for fname in file_list:
             print('\t{0}'.format(fname))
 
-def copy_files_from_a_to_b(dira,dirb,files,overwrite=False):
+def copy_files_from_a_to_b(dira, dirb, files, overwrite=False):
+    """Copy files from source directory to backup directory."""
     for filename in files:
-        old_path = os.path.join(dira,filename)
-        new_path = os.path.join(dirb,filename)
+        old_path = os.path.join(dira, filename)
+        new_path = os.path.join(dirb, filename)
 ##        print('if we were copying right now...')
         if os.path.isdir(old_path):
             if not os.path.exists(new_path):
-                print('{0} --> {1}'.format(old_path,new_path))
+                print('{0} --> {1}'.format(old_path, new_path))
 ##                os.mkdir(new_path)
-                shutil.copytree(old_path,new_path)
+                shutil.copytree(old_path, new_path)
                 print('Copied!')
-                
+
         elif os.path.isfile(old_path):
-            print('{0} --> {1}'.format(old_path,new_path))
+            print('{0} --> {1}'.format(old_path, new_path))
             if os.path.exists(new_path):
                 print('File already exists!')
-                if overwrite == True:
+                if overwrite:
                     print('Overwriting!')
                     send2trash.send2trash(new_path)
-                    shutil.copy2(old_path,new_path)
+                    shutil.copy2(old_path, new_path)
                     print('Copied!\n')
             else:
-                print('{0} --> {1}'.format(old_path,new_path))
-                shutil.copy2(old_path,new_path)
+                print('{0} --> {1}'.format(old_path, new_path))
+                shutil.copy2(old_path, new_path)
                 print('Copied!')
         else:
-            print('{0} --> {1}'.format(old_path,new_path))
+            print('{0} --> {1}'.format(old_path, new_path))
             print("Error! No file found!")
     print('done copying files')
-                
+
 
 def delete_files_from_b(dirb, files):
+    """Delete files in a given folder.
+
+    Arguments:
+    dirb -- folder path
+    files -- a list of relative filepaths for files to delete
+    """
     for filepath in files:
-        path = os.path.join(dirb,filepath)
+        path = os.path.join(dirb, filepath)
         print("deleting {0}".format(path))
         print(path := os.path.normpath(path))
         send2trash.send2trash(path)
     print("Done deleting")
 
-def move_files_in_b(dirb, file_sets):
+def move_files_in_b(file_sets):
+    """Move files from one location to another.
+
+    Arguments:
+    file_sets -- a list of tuples of filepaths (source_path, destination_path)
+    """
     for file_set in file_sets:
         src = file_set[0]
         dest = file_set[1].split(os.path.sep)
 ##        dest = os.path.sep.join(dest[0:-1])
         dest = os.path.sep.join(dest)
 ##        move_file_from_a_to_b(src,dest,fn_src)
-        print('moving FROM:\n',src,'\nTO:\n',dest,'\n\n\n')
-        shutil.move(src,dest)
-    print('done moving')        
-    
-def update_files_a_to_b(dira,dirb,files):
-    copy_files_from_a_to_b(dira,dirb,files,overwrite=True)
+        print('moving FROM:\n', src, '\nTO:\n', dest, '\n\n\n')
+        shutil.move(src, dest)
+    print('done moving')
+
+def update_files_a_to_b(dira, dirb, files):
+    """Copy files from source directory to backup directory."""
+    copy_files_from_a_to_b(dira, dirb, files, overwrite=True)
     print("Done updating")
 
-def make_changes(dira,dirb,report):
+def make_changes(dira, dirb, report):
+    """Use CLI to update the backup folder."""
     if len(report['moved_files']) > 0:
         goto = input('Move Files? Y/N')
-        if goto in ('y','Y','yes','Yes','YES'):
-            move_files_in_b(dirb,report['moved_files'])
+        if goto in ('y', 'Y', 'yes', 'Yes', 'YES'):
+            move_files_in_b(report['moved_files'])
             return "recheck"
     if len(report['added_files']) > 0:
         goto = input('Copy New Files? Y/N')
-        if goto in ('y','Y','yes','Yes','YES'):
-            copy_files_from_a_to_b(dira,dirb,report['added_files'])
+        if goto in ('y', 'Y', 'yes', 'Yes', 'YES'):
+            copy_files_from_a_to_b(dira, dirb, report['added_files'])
     if len(report['removed_files']) > 0:
         goto = input('Delete Old Files? Y/N')
-        if goto in ('y','Y','yes','Yes','YES'):
-            delete_files_from_b(dirb,report['removed_files'])    
+        if goto in ('y', 'Y', 'yes', 'Yes', 'YES'):
+            delete_files_from_b(dirb, report['removed_files'])
     if len(report['mismatched_files']) > 0:
         goto = input('Update Changed Files? Y/N')
-        if goto in ('y','Y','yes','Yes','YES'):
-            update_files_a_to_b(dira,dirb,report['mismatched_files'])
+        if goto in ('y', 'Y', 'yes', 'Yes', 'YES'):
+            update_files_a_to_b(dira, dirb, report['mismatched_files'])
     return "quit"
 
 
-class App(object):
+class App:
+    """App class is used to hold the backup app window and methods."""
     def __init__(self, master, srcdir, bakdir):
         self.master = master
         self.source_dir = srcdir
-        self.sourceDirVar = tk.StringVar()
+        self.source_directory_variable = tk.StringVar()
         self.backup_dir = bakdir
-        self.backupDirVar = tk.StringVar()
+        self.backup_directory_variable = tk.StringVar()
         self.refresh_directory_variables()
         self.make_window()
-        self.examined_report=dict()
+        self.examined_report = dict()
 
         self.show_tree('both')
 
-    def show_tree(self,which):
+    def show_tree(self, which):
+        """Show directory tree in display pane.
+
+        IN DEVELOPMENT
+        """
         if which == 'source':
-            folder = self.source_dir
-            displayPane = self.source_field
+            #folder = self.source_dir # this is just for debug
+            display_pane = self.source_field
         elif which == 'backup':
-            folder = self.backup_dir
-            displayPane = self.backup_field
+            #folder = self.backup_dir # this is just for debug
+            display_pane = self.backup_field
         elif which == 'both':
             self.show_tree('source')
             self.show_tree('backup')
             return
-        
-##        showTree(folder) # this is just for debug
+
+##        show_tree(folder) # this is just for debug
 
         ### change this to only display current folder
         # display file contents in source display
-        displayPane.delete(0,tk.END)
+        display_pane.delete(0, tk.END)
 ##        level=0
-##        for dirName, subdirList, fileList in os.walk(folder):
+##        for directory_name, subdirectory_list, file_list in os.walk(folder):
 ##            level += 1
-##            displayPane.insert(tk.END,'__'*(level-1)+dirName)
-##            for sub in fileList:
-##                displayPane.insert(tk.END,'_'*level+sub)
+##            display_pane.insert(tk.END,'__'*(level-1)+directory_name)
+##            for sub in file_list:
+##                display_pane.insert(tk.END,'_'*level+sub)
 
     def select_file_source(self, event=None, index=None):
-        if not index:
+        """Select a file from the changed files list in the source folder.
+
+        If the file was:
+            created, copy it from the source location to the backup location.
+        """
+        if index is None:
             index = self.source_field.nearest(event.y)
         #selected = self.displayEntries[index]
         filename = self.source_field.get(index)
-        copy_files_from_a_to_b(self.source_dir,self.backup_dir,[filename])
+        copy_files_from_a_to_b(self.source_dir, self.backup_dir, [filename])
         self.source_field.delete(index)
-        
+
     def copy_selected(self):
-        items = map(int, self.source_field.curselection())
-        to_delete = []
+        """Copy selected files in the changed files list to the backup folder.
+
+        Copy each file that has been selected in the source folder list to the backup folder list.
+        """
+        items = list(map(int, self.source_field.curselection()))
+        items.sort(reverse=True)
         for item in items:
-            #print(f"{item}: {self.source_field.get(item)}")
-            filename = self.source_field.get(item)
-            copy_files_from_a_to_b(self.source_dir,self.backup_dir,[filename])
-            to_delete.append(item)
-        to_delete.sort(reverse=True)
-        for item in to_delete:
-            self.source_field.delete(item)
-    
+            self.select_file_source(index=item)
+
     def select_file_backup(self, event):
+        """Select a file from the changed files list in the backup folder.
+
+        If the file was:
+            moved, move it in the backup location.
+            deleted, delete it in the backup location.
+            changed, copy it from the source location to the backup location.
+        """
         print(event.y)
 
     def make_window(self):
+        """Create the window layout."""
         self.master.winfo_toplevel().title("Backup Master")
-        self.filebar = tk.Menu(self.master)
-        self.filemenu = tk.Menu(self.filebar,tearoff=0)
-        self.filebar.add_cascade(label="File", menu=self.filemenu)
+        filebar = tk.Menu(self.master)
+        self.filemenu = tk.Menu(filebar, tearoff=0)
+        filebar.add_cascade(label="File", menu=self.filemenu)
 
-        self.source_field = tk.Listbox(self.master,width=60,selectmode=tk.EXTENDED)
-        self.backup_field = tk.Listbox(self.master,width=60)
+        self.source_field = tk.Listbox(self.master, width=60,
+                                       selectmode=tk.EXTENDED)
+        self.backup_field = tk.Listbox(self.master, width=60)
 
-        bw=20 #button width
-        self.scanButton = tk.Button(self.master,text="Scan",command=self.scan,width=bw)
-        self.moveButton = tk.Button(self.master,text="Move in Backup",command=lambda: move_files_in_b(self.backup_dir,self.examined_report['moved_files']),width=bw)
-        self.copyButton = tk.Button(self.master,text="Copy to Backup",command=lambda: copy_files_from_a_to_b(self.source_dir,self.backup_dir,self.examined_report['added_files']),width=bw)
-        self.copySelectedButton = tk.Button(self.master,text="Copy Selected to Backup",command=self.copy_selected,width=bw)
-        self.removeButton = tk.Button(self.master,text="Remove from Backup",command=lambda: delete_files_from_b(self.backup_dir,self.examined_report['removed_files']),width=bw)
-        self.updateButton = tk.Button(self.master,text="Update in Backup",command=lambda: update_files_a_to_b(self.source_dir,self.backup_dir,self.examined_report['mismatched_files']),width=bw)
-        self.prog_det = tk.IntVar(self.master)
-        self.progressbar = ttk.Progressbar(self.master, mode="determinate", variable=self.prog_det, maximum=100)     # testing progress bar capabillities
-        
-        self.source_field.grid(row=1,column=0,rowspan=7,columnspan=2,sticky='nsew')
-        self.scanButton.grid(row=1,column=2)
-        self.moveButton.grid(row=2,column=2)
-        self.copyButton.grid(row=3,column=2)
-        self.copySelectedButton.grid(row=4,column=2)
-        self.removeButton.grid(row=5,column=2)
-        self.updateButton.grid(row=6,column=2)
-        self.progressbar.grid(row=7,column=2, sticky='new')
-        self.backup_field.grid(row=1,column=3,rowspan=7,columnspan=2,sticky='nsew')
+        button_width = 20 #button width
+        scan_button = tk.Button(self.master, text="Scan",
+                                command=self.scan, width=button_width)
+        move_button = tk.Button(self.master, text="Move in Backup",
+                                command=lambda: move_files_in_b(self.examined_report['moved_files']), width=button_width)
+        copy_button = tk.Button(self.master, text="Copy to Backup",
+                                command=lambda: copy_files_from_a_to_b(self.source_dir, self.backup_dir, self.examined_report['added_files']),
+                                width=button_width)
+        copy_selected_button = tk.Button(self.master,
+                                         text="Copy Selected to Backup",
+                                         command=self.copy_selected, width=button_width)
+        remove_button = tk.Button(self.master, text="Remove from Backup",
+                                  command=lambda: delete_files_from_b(self.backup_dir, self.examined_report['removed_files']), width=button_width)
+        update_button = tk.Button(self.master, text="Update in Backup",
+                                  command=lambda: update_files_a_to_b(self.source_dir, self.backup_dir, self.examined_report['mismatched_files']), width=button_width)
 
-        self.sourceButton = tk.Button(self.master,text="Open Source Folder",command=self.opensource)
-        self.sourceLocViewer = tk.Entry(self.master, textvariable=self.sourceDirVar,state="readonly")
-        self.sourceButton.grid(row=0,column=0,sticky='nsew')
-        self.sourceLocViewer.grid(row=0,column=1,sticky='nsew')
+        self.source_field.grid(row=1, column=0, rowspan=7, columnspan=2,
+                               sticky='nsew')
+        scan_button.grid(row=1, column=2)
+        move_button.grid(row=2, column=2)
+        copy_button.grid(row=3, column=2)
+        copy_selected_button.grid(row=4, column=2)
+        remove_button.grid(row=5, column=2)
+        update_button.grid(row=6, column=2)
+        self.backup_field.grid(row=1, column=3, rowspan=7, columnspan=2,
+                               sticky='nsew')
 
-        self.backupButton = tk.Button(self.master,text="Open Backup Folder",command=self.openbackup)
-        self.backupLocViewer = tk.Entry(self.master, textvariable=self.backupDirVar,state="readonly")
-        self.backupButton.grid(row=0,column=3,sticky='nsew')
-        self.backupLocViewer.grid(row=0,column=4,sticky='nsew')
+        source_button = tk.Button(self.master,
+                                  text="Open Source Folder",
+                                  command=self.open_source_directory)
+        source_location_viewer = tk.Entry(self.master,
+                                          textvariable=self.source_directory_variable, state="readonly")
+        source_button.grid(row=0, column=0, sticky='nsew')
+        source_location_viewer.grid(row=0, column=1, sticky='nsew')
+
+        backup_button = tk.Button(self.master,
+                                  text="Open Backup Folder",
+                                  command=self.open_backup_directory)
+        backup_location_viewer = tk.Entry(self.master,
+                                          textvariable=self.backup_directory_variable, state="readonly")
+        backup_button.grid(row=0, column=3, sticky='nsew')
+        backup_location_viewer.grid(row=0, column=4, sticky='nsew')
 
         self.master.rowconfigure(6, weight=1)
         self.master.columnconfigure(1, weight=1)
         self.master.columnconfigure(4, weight=1)
-                              
-        self.master.config(menu=self.filebar)
-        
+
+        self.master.config(menu=filebar)
+
         self.source_field.bind("<Double-Button-1>", self.select_file_source)
         self.backup_field.bind("<Double-Button-1>", self.select_file_backup)
 
-    def opensource(self):
-        file = filedialog.askdirectory(parent=self.master,title='Open Source Directory...',initialdir=self.source_dir)
-        if file:
-            self.source_dir = file
-            self.finishopen()
+    def open_source_directory(self):
+        """Select a source directory."""
+        dir_name = filedialog.askdirectory(parent=self.master,
+                                           title='Open Source Directory...',
+                                           initialdir=self.source_dir)
+        if dir_name:
+            self.source_dir = dir_name
+            self.finish_open()
 
-    def openbackup(self):
-        file = filedialog.askdirectory(parent=self.master,title='Open Backup Directory...',initialdir=self.backup_dir)
-        if file:
-            self.backup_dir = file
-            self.finishopen()
+    def open_backup_directory(self):
+        """Select a backup directory."""
+        dir_name = filedialog.askdirectory(parent=self.master,
+                                           title='Open Backup Directory...',
+                                           initialdir=self.backup_dir)
+        if dir_name:
+            self.backup_dir = dir_name
+            self.finish_open()
 
-    def finishopen(self):
+    def finish_open(self):
+        """Clean up after selecting new folder."""
         self.refresh_directory_variables()
-        with open('log.txt','w') as file:
-            file.write(self.source_dir+'\n')
-            file.write(self.backup_dir+'\n')
+        with open('log.txt', 'w') as log:
+            log.write(self.source_dir+'\n')
+            log.write(self.backup_dir+'\n')
         self.show_tree('both')
-        
+
     def refresh_directory_variables(self):
-        self.sourceDirVar.set(self.source_dir)
-        self.backupDirVar.set(self.backup_dir)
-        
+        """Set TK variables to the selected directories."""
+        self.source_directory_variable.set(self.source_dir)
+        self.backup_directory_variable.set(self.backup_dir)
+
     def scan(self):
+        """Scan the source and backup directories and display results."""
         start = time.time()
-        self.prog_det.set(0)
-        self.progressbar.configure(mode="indeterminate",maximum=100)
-        report = self.compareDirectories(self.source_dir,self.backup_dir)
-        self.examined_report = self.examineReport(report)
-        self.displayExaminedResults()
+        report = self.compare_directories(self.source_dir, self.backup_dir)
+        self.examined_report = self.examine_report(report)
+        self.display_examined_results()
         runtime = time.time()-start
-        self.prog_det.set( self.progressbar.cget('maximum') )
         print('\nruntime: {0} seconds'.format(runtime))
 
-    def compareDirectories(self,dira,dirb,recursing=False):
-        self.progressbar.step()
+    def compare_directories(self, dira, dirb, recursing=False):
+        """Compare source and backup directories."""
         simple_report = {}
         #compare directories (This uses shallow comparison!!)
-        dirs_cmp = filecmp.dircmp(dira,dirb)
+        dirs_cmp = filecmp.dircmp(dira, dirb)
         # Identify files that are only in dira
-        simple_report['added_files'] = [x for x in dirs_cmp.left_only]
+        simple_report['added_files'] = dirs_cmp.left_only[:]
         # Identify files that are only in dirb
-        simple_report['removed_files'] = [x for x in dirs_cmp.right_only]
+        simple_report['removed_files'] = dirs_cmp.right_only[:]
         # For files in both, do a deep comparison using filecmp
-        (simple_report['matched_files'], simple_report['mismatched_files'], simple_report['errors']) = filecmp.cmpfiles(dira,dirb,dirs_cmp.common_files, shallow=SHALLOW)
+        (simple_report['matched_files'],
+         simple_report['mismatched_files'],
+         simple_report['errors']) = filecmp.cmpfiles(dira,
+                                                     dirb,
+                                                     dirs_cmp.common_files,
+                                                     shallow=SHALLOW)
 
-##        self.progressbar.config(maximum=len(dirs_cmp.common_dirs)+1)
         # Check subfolders
         for common_dir in dirs_cmp.common_dirs:
-            self.progressbar.step()
             new_dira = os.path.join(dira, common_dir)
             new_dirb = os.path.join(dirb, common_dir)
-            sub_report = self.compareDirectories(new_dira,new_dirb,recursing=True)
+            sub_report = self.compare_directories(new_dira,
+                                                  new_dirb,
+                                                  recursing=True)
             if not recursing:
                 print('Checking subfolder {0}'.format(new_dira))
 
             #add sub report to overall report
             for item in sub_report['added_files']:
-                simple_report['added_files'].append(os.path.join(common_dir,item))
+                simple_report['added_files'].append(os.path.join(common_dir,
+                                                                 item))
             for item in sub_report['removed_files']:
-                simple_report['removed_files'].append(os.path.join(common_dir,item))
+                simple_report['removed_files'].append(os.path.join(common_dir,
+                                                                   item))
             for item in sub_report['matched_files']:
-                simple_report['matched_files'].append(os.path.join(common_dir,item))
+                simple_report['matched_files'].append(os.path.join(common_dir,
+                                                                   item))
             for item in sub_report['mismatched_files']:
-                simple_report['mismatched_files'].append(os.path.join(common_dir,item))
+                simple_report['mismatched_files'].append(os.path.join(common_dir,
+                                                                      item))
             for item in sub_report['errors']:
-                simple_report['errors'].append(os.path.join(common_dir,item))
+                simple_report['errors'].append(os.path.join(common_dir, item))
 
     ##    for adir in dirs_cmp.left_only:
     ##        if os.path.isdir(adir):
@@ -280,16 +341,17 @@ class App(object):
 
         return simple_report
 
-    def displayExaminedResults(self):
-        same = self.examined_report['matched_files']
+    def display_examined_results(self):
+        """Display the results in the display lists"""
+        #same = self.examined_report['matched_files']
         diff = self.examined_report['mismatched_files']
         aonly = self.examined_report['added_files']
         bonly = self.examined_report['removed_files']
         errors = self.examined_report['errors']
         moved = self.examined_report['moved_files']
 
-        self.source_field.delete(0,tk.END)
-        self.backup_field.delete(0,tk.END)
+        self.source_field.delete(0, tk.END)
+        self.backup_field.delete(0, tk.END)
         if diff == aonly == bonly == errors == moved == []:
             print('\nNo Changes Detected!')
         else:
@@ -297,98 +359,91 @@ class App(object):
 ##                print('\nThese files have moved:')
                 for item in moved:
 ##                    print(item[0],'-->',item[1])
-                    self.backup_field.insert(tk.END,item[0]+'-->'+item[1])
+                    self.backup_field.insert(tk.END, item[0]+'-->'+item[1])
                     self.backup_field.itemconfig(tk.END, {'bg':'yellow'})
             if diff != []:
 ##                print('\nThese files have changed:')
                 for item in diff:
 ##                    print(item)
-                    self.backup_field.insert(tk.END,item)
+                    self.backup_field.insert(tk.END, item)
                     self.backup_field.itemconfig(tk.END, {'bg':'orange'})
             if aonly != []:
 ##                print('\nThese files are new or moved:')
                 for item in aonly:
 ##                    print(item)
-                    self.source_field.insert(tk.END,item)
+                    self.source_field.insert(tk.END, item)
                     self.source_field.itemconfig(tk.END, {'bg':'green'})
             if bonly != []:
 ##                print('\nThese files have been deleted or moved:')
                 for item in bonly:
 ##                    print(item)
-                    self.backup_field.insert(tk.END,item)
+                    self.backup_field.insert(tk.END, item)
                     self.backup_field.itemconfig(tk.END, {'bg':'red'})
             if errors != []:
                 print('\nThese files had errors (check manually!):')
                 for item in errors:
                     print(item)
 
-    def examineReport(self,report):
-        dira = self.source_dir
-        dirb = self.backup_dir
-        examinedReport = report
-        aonly = report['added_files']
-        bonly = report['removed_files']
-        moved = []
+    def examine_report(self, report):
+        """Return examined report as dictionary
 
-        # for every file that's only in a, compare to files only in b
-        self.progressbar.config(maximum=len(aonly)+1)
-        self.prog_det.set(0)
-        for i,added in enumerate(aonly):
-            self.progressbar.step()
-            new_file = os.path.join(dira,added)
+        Look for files that were moved from one location to another
+        """
+
+        moved = []
+        a_to_delete = []
+        b_to_delete = []
+
+        # for every file & dir that's only in a, compare to files only in b
+        for i, added in enumerate(report['added_files']):
+            new_file = os.path.join(self.source_dir, added)
             # if file is a file, check for identical files
             if os.path.isfile(new_file):
-                for j,removed in enumerate(bonly):
-                    old_file = os.path.join(dirb,removed)
+                for j, removed in enumerate(report['removed_files']):
+                    old_file = os.path.join(self.backup_dir, removed)
                     if os.path.isfile(old_file):
                         if filecmp.cmp(new_file, old_file, shallow=False):
-                            old_path = os.path.join(dirb,bonly[j])
-                            new_path = os.path.join(dirb,aonly[i])
-                            moved.append((old_path,new_path))
-                            del aonly[i]
-                            del bonly[j]
+                            old_path = os.path.join(self.backup_dir, report['removed_files'][j])
+                            new_path = os.path.join(self.backup_dir, report['added_files'][i])
+                            moved.append((old_path, new_path))
+                            a_to_delete.append(i)
+                            b_to_delete.append(j)
             # If file is a dir, check for similar dirs
             elif os.path.isdir(new_file):
-                for j,removed in enumerate(bonly):
-                    old_file = os.path.join(dirb,removed)
+                for j, removed in enumerate(report['removed_files']):
+                    old_file = os.path.join(self.backup_dir, removed)
                     if os.path.isdir(old_file):
                         report = filecmp.dircmp(new_file, old_file)
                         if len(report.common) > (len(report.left_only) + len(report.right_only)):
-                            old_path = os.path.join(dirb,bonly[j])
-                            new_path = os.path.join(dirb,aonly[i])
-                            moved.append((old_path,new_path))
-                            del aonly[i]
-                            del bonly[j]
-        self.prog_det.set( self.progressbar.cget('maximum') )
+                            old_path = os.path.join(self.backup_dir, report['removed_files'][j])
+                            new_path = os.path.join(self.backup_dir, report['added_files'][i])
+                            moved.append((old_path, new_path))
+                            a_to_delete.append(i)
+                            b_to_delete.append(j)
 
-        examinedReport['moved_files'] = moved
-        return examinedReport
+        # delete files/dirs from added & removed lists if they are now on the moved list
+        a_to_delete.sort(reverse=True)
+        b_to_delete.sort(reverse=True)
+        for index in a_to_delete:
+            del report['added_files'][index]
+        for index in b_to_delete:
+            del report['removed_files'][index]
+
+        report['moved_files'] = moved
+        return report
 
 if __name__ == '__main__':
-    directories = []
-    with open('log.txt','r') as file:
-        for line in file:
-            directories.append(line)
-
-    STARTING_DIRECTORY, BACKUP_DIRECTORY = directories[0][0:-1], directories[1][0:-1]
+    DIRS = []
+    try:
+        with open('log.txt', 'r') as file:
+            for line in file:
+                DIRS.append(line)
+        STARTING_DIRECTORY, BACKUP_DIRECTORY = DIRS[0][0:-1], DIRS[1][0:-1]
+    except:
+        STARTING_DIRECTORY = r'.\Demo Source Location'
+        BACKUP_DIRECTORY = r'.\Demo Backup Location'
     print(STARTING_DIRECTORY, BACKUP_DIRECTORY)
 
-    root = tk.Tk()
-    app = App(root, STARTING_DIRECTORY, BACKUP_DIRECTORY)
-    root.mainloop()
-    
-##    examined_report = scan(STARTING_DIRECTORY, BACKUP_DIRECTORY)
-
-    
-##    next_act = "start"
-##    while next_act != "quit":
-##        if next_act == "start":
-##            next_act = make_changes(STARTING_DIRECTORY,BACKUP_DIRECTORY,examined_report)
-##            next_act = "recheck"
-##        elif next_act == "recheck":
-##            examined_report = examineReport(STARTING_DIRECTORY, BACKUP_DIRECTORY,examined_report)
-##            next_act = "start"
-##        force_quit = input("type q to quit!")
-##        if force_quit == "q":
-##            next_act = "quit"
-    
+    ROOT = tk.Tk()
+    APP = App(ROOT, STARTING_DIRECTORY, BACKUP_DIRECTORY)
+    ROOT.mainloop()
