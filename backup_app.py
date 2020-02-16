@@ -9,9 +9,11 @@ import os
 import filecmp
 import time
 import shutil
+from datetime import datetime
 import tkinter as tk
 from tkinter import filedialog
 
+from pprint import pprint
 import send2trash
 
 SHALLOW = True
@@ -123,9 +125,19 @@ class App:
         self.backup_directory_variable = tk.StringVar()
         self.refresh_directory_variables()
         self.make_window()
+        self.log_file = f'{datetime.now().strftime("%Y-%m-%d-%H-%M-%S")}.log'
+        self.log((self.source_dir, self.backup_dir), True)
         self.examined_report = dict()
 
         self.show_tree('both')
+
+    def log(self, msg, pretty=False):
+        """Log messages to the session log file."""
+        with open(self.log_file, 'a+') as out:
+            if pretty:
+                pprint(msg, stream=out)
+            else:
+                out.write(msg)
 
     def show_tree(self, which):
         """Show directory tree in display pane.
@@ -272,7 +284,7 @@ class App:
     def finish_open(self):
         """Clean up after selecting new folder."""
         self.refresh_directory_variables()
-        with open('log.txt', 'w') as log:
+        with open('last_dirs.log', 'w') as log:
             log.write(self.source_dir+'\n')
             log.write(self.backup_dir+'\n')
         self.show_tree('both')
@@ -290,6 +302,7 @@ class App:
         self.display_examined_results()
         runtime = time.time()-start
         print('\nruntime: {0} seconds'.format(runtime))
+        self.log(self.examined_report, True)
 
     def compare_directories(self, dira, dirb, recursing=False):
         """Compare source and backup directories."""
@@ -427,11 +440,11 @@ class App:
 if __name__ == '__main__':
     DIRS = []
     try:
-        with open('log.txt', 'r') as file:
+        with open('last_dirs.log', 'r') as file:
             for line in file:
                 DIRS.append(line)
         STARTING_DIRECTORY, BACKUP_DIRECTORY = DIRS[0][0:-1], DIRS[1][0:-1]
-    except:
+    except (FileNotFoundError, IndexError):
         STARTING_DIRECTORY = r'.\Demo Source Location'
         BACKUP_DIRECTORY = r'.\Demo Backup Location'
     print(STARTING_DIRECTORY, BACKUP_DIRECTORY)
