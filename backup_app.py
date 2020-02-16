@@ -394,48 +394,42 @@ class App:
 
         Look for files that were moved from one location to another
         """
-
+        dira = self.source_dir
+        dirb = self.backup_dir
+        examined_report = report
+        aonly = report['added_files']
+        bonly = report['removed_files']
         moved = []
-        a_to_delete = []
-        b_to_delete = []
 
-        # for every file & dir that's only in a, compare to files only in b
-        for i, added in enumerate(report['added_files']):
-            new_file = os.path.join(self.source_dir, added)
+        # for every file that's only in a, compare to files only in b
+        for i, added in enumerate(aonly):
+            new_file = os.path.join(dira, added)
             # if file is a file, check for identical files
             if os.path.isfile(new_file):
-                for j, removed in enumerate(report['removed_files']):
-                    old_file = os.path.join(self.backup_dir, removed)
+                for j, removed in enumerate(bonly):
+                    old_file = os.path.join(dirb, removed)
                     if os.path.isfile(old_file):
                         if filecmp.cmp(new_file, old_file, shallow=False):
-                            old_path = os.path.join(self.backup_dir, report['removed_files'][j])
-                            new_path = os.path.join(self.backup_dir, report['added_files'][i])
+                            old_path = os.path.join(dirb, bonly[j])
+                            new_path = os.path.join(dirb, aonly[i])
                             moved.append((old_path, new_path))
-                            a_to_delete.append(i)
-                            b_to_delete.append(j)
+                            del aonly[i]
+                            del bonly[j]
             # If file is a dir, check for similar dirs
             elif os.path.isdir(new_file):
-                for j, removed in enumerate(report['removed_files']):
-                    old_file = os.path.join(self.backup_dir, removed)
+                for j, removed in enumerate(bonly):
+                    old_file = os.path.join(dirb, removed)
                     if os.path.isdir(old_file):
                         report = filecmp.dircmp(new_file, old_file)
                         if len(report.common) > (len(report.left_only) + len(report.right_only)):
-                            old_path = os.path.join(self.backup_dir, report['removed_files'][j])
-                            new_path = os.path.join(self.backup_dir, report['added_files'][i])
+                            old_path = os.path.join(dirb, bonly[j])
+                            new_path = os.path.join(dirb, aonly[i])
                             moved.append((old_path, new_path))
-                            a_to_delete.append(i)
-                            b_to_delete.append(j)
+                            del aonly[i]
+                            del bonly[j]
 
-        # delete files/dirs from added & removed lists if they are now on the moved list
-        a_to_delete.sort(reverse=True)
-        b_to_delete.sort(reverse=True)
-        for index in a_to_delete:
-            del report['added_files'][index]
-        for index in b_to_delete:
-            del report['removed_files'][index]
-
-        report['moved_files'] = moved
-        return report
+        examined_report['moved_files'] = moved
+        return examined_report
 
 if __name__ == '__main__':
     DIRS = []
