@@ -319,20 +319,12 @@ class App:
                 print('Checking subfolder {0}'.format(new_dira))
 
             #add sub report to overall report
-            for item in sub_report['added_files']:
-                simple_report['added_files'].append(os.path.join(common_dir,
-                                                                 item))
-            for item in sub_report['removed_files']:
-                simple_report['removed_files'].append(os.path.join(common_dir,
-                                                                   item))
-            for item in sub_report['matched_files']:
-                simple_report['matched_files'].append(os.path.join(common_dir,
-                                                                   item))
-            for item in sub_report['mismatched_files']:
-                simple_report['mismatched_files'].append(os.path.join(common_dir,
-                                                                      item))
-            for item in sub_report['errors']:
-                simple_report['errors'].append(os.path.join(common_dir, item))
+            for key in ('added_files', 'removed_files',
+                        'matched_files', 'mismatched_files',
+                        'errors'):
+                for item in sub_report[key]:
+                    simple_report[key].append(os.path.join(common_dir,
+                                                           item))
 
     ##    for adir in dirs_cmp.left_only:
     ##        if os.path.isdir(adir):
