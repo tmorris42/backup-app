@@ -5,6 +5,7 @@
 Compare the current state of a source folder with the current state of the backup folder.
 """
 
+import logging
 import os
 import filecmp
 import time
@@ -22,40 +23,40 @@ def show_tree(directory):
     """Print the directory tree."""
     root_directory = directory
     for directory_name, _, file_list in os.walk(root_directory):
-        print('Found directory: {0}'.format(directory_name))
+        logging.info('Found directory: %s', directory_name)
         for fname in file_list:
-            print('\t{0}'.format(fname))
+            logging.info('\t%s', fname)
 
 def copy_files_from_a_to_b(dira, dirb, files, overwrite=False):
     """Copy files from source directory to backup directory."""
     for filename in files:
         old_path = os.path.join(dira, filename)
         new_path = os.path.join(dirb, filename)
-##        print('if we were copying right now...')
+##        logging.debug('if we were copying right now...')
         if os.path.isdir(old_path):
             if not os.path.exists(new_path):
-                print('{0} --> {1}'.format(old_path, new_path))
+                logging.info('%s --> %s', old_path, new_path)
 ##                os.mkdir(new_path)
                 shutil.copytree(old_path, new_path)
-                print('Copied!')
+                logging.info('Copied!')
 
         elif os.path.isfile(old_path):
-            print('{0} --> {1}'.format(old_path, new_path))
+            logging.info('%s --> %s', old_path, new_path)
             if os.path.exists(new_path):
-                print('File already exists!')
+                logging.warning('File already exists!')
                 if overwrite:
-                    print('Overwriting!')
+                    logging.warning('Overwriting!')
                     send2trash.send2trash(new_path)
                     shutil.copy2(old_path, new_path)
-                    print('Copied!\n')
+                    logging.info('Copied!\n')
             else:
-                print('{0} --> {1}'.format(old_path, new_path))
+                logging.info('%s --> %s', old_path, new_path)
                 shutil.copy2(old_path, new_path)
-                print('Copied!')
+                logging.info('Copied!')
         else:
-            print('{0} --> {1}'.format(old_path, new_path))
-            print("Error! No file found!")
-    print('done copying files')
+            logging.info('%s --> %s', old_path, new_path)
+            logging.error("Error! No file found!")
+    logging.info('done copying files')
 
 
 def delete_files_from_b(dirb, files):
@@ -67,10 +68,10 @@ def delete_files_from_b(dirb, files):
     """
     for filepath in files:
         path = os.path.join(dirb, filepath)
-        print("deleting {0}".format(path))
-        print(path := os.path.normpath(path))
+        logging.info("deleting %s", path)
+        logging.info(path := os.path.normpath(path))
         send2trash.send2trash(path)
-    print("Done deleting")
+    logging.info("Done deleting")
 
 def move_files_in_b(file_sets):
     """Move files from one location to another.
@@ -84,14 +85,14 @@ def move_files_in_b(file_sets):
 ##        dest = os.path.sep.join(dest[0:-1])
         dest = os.path.sep.join(dest)
 ##        move_file_from_a_to_b(src,dest,fn_src)
-        print('moving FROM:\n', src, '\nTO:\n', dest, '\n\n\n')
+        logging.info('moving FROM:\n%s\nTO:\n%s\n\n\n', src, dest)
         shutil.move(src, dest)
-    print('done moving')
+    logging.info('done moving')
 
 def update_files_a_to_b(dira, dirb, files):
     """Copy files from source directory to backup directory."""
     copy_files_from_a_to_b(dira, dirb, files, overwrite=True)
-    print("Done updating")
+    logging.info("Done updating")
 
 def make_changes(dira, dirb, report):
     """Use CLI to update the backup folder."""
@@ -117,7 +118,7 @@ def make_changes(dira, dirb, report):
 
 class App:
     """App class is used to hold the backup app window and methods."""
-    def __init__(self, master, srcdir, bakdir, logging=False):
+    def __init__(self, master, srcdir, bakdir, log_to_file=False):
         self.master = master
         self.source_dir = srcdir
         self.source_directory_variable = tk.StringVar()
@@ -125,7 +126,7 @@ class App:
         self.backup_directory_variable = tk.StringVar()
         self.refresh_directory_variables()
         self.make_window()
-        self.logging = logging
+        self.log_to_file = log_to_file
         self.log_file = f'__logs/{datetime.now().strftime("%Y-%m-%d-%H-%M-%S")}.log'
         self.log((self.source_dir, self.backup_dir), True)
         self.examined_report = dict()
@@ -134,7 +135,7 @@ class App:
 
     def log(self, msg, pretty=False):
         """Log messages to the session log file."""
-        if not self.logging:
+        if not self.log_to_file:
             return False
         with open(self.log_file, 'a+') as out:
             if pretty:
@@ -202,7 +203,7 @@ class App:
             deleted, delete it in the backup location.
             changed, copy it from the source location to the backup location.
         """
-        print(event.y)
+        logging.debug(event.y)
 
     def make_window(self):
         """Create the window layout."""
@@ -305,7 +306,7 @@ class App:
         self.examined_report = self.examine_report(report)
         self.display_examined_results()
         runtime = time.time()-start
-        print('\nruntime: {0} seconds'.format(runtime))
+        logging.info('runtime: %d seconds', runtime)
         self.log(self.examined_report, True)
 
     def compare_directories(self, dira, dirb, recursing=False):
@@ -333,7 +334,7 @@ class App:
                                                   new_dirb,
                                                   recursing=True)
             if not recursing:
-                print('Checking subfolder {0}'.format(new_dira))
+                logging.info('Checking subfolder\n\n\t%s\n', new_dira)
 
             #add sub report to overall report
             for key in ('added_files', 'removed_files',
@@ -362,36 +363,36 @@ class App:
         self.source_field.delete(0, tk.END)
         self.backup_field.delete(0, tk.END)
         if diff == aonly == bonly == errors == moved == []:
-            print('\nNo Changes Detected!')
+            logging.info('No Changes Detected!')
         else:
             if moved != []:
-##                print('\nThese files have moved:')
+##                logging.debug('\nThese files have moved:')
                 for item in moved:
-##                    print(item[0],'-->',item[1])
+##                    logging.debug(item[0],'-->',item[1])
                     self.backup_field.insert(tk.END, item[0]+'-->'+item[1])
                     self.backup_field.itemconfig(tk.END, {'bg':'yellow'})
             if diff != []:
-##                print('\nThese files have changed:')
+##                logging.info('\nThese files have changed:')
                 for item in diff:
-##                    print(item)
+##                    logging.debug(item)
                     self.backup_field.insert(tk.END, item)
                     self.backup_field.itemconfig(tk.END, {'bg':'orange'})
             if aonly != []:
-##                print('\nThese files are new or moved:')
+##                logging.debug('\nThese files are new or moved:')
                 for item in aonly:
-##                    print(item)
+##                    logging.debug(item)
                     self.source_field.insert(tk.END, item)
                     self.source_field.itemconfig(tk.END, {'bg':'green'})
             if bonly != []:
-##                print('\nThese files have been deleted or moved:')
+##                logging.debug('\nThese files have been deleted or moved:')
                 for item in bonly:
-##                    print(item)
+##                    logging.debug(item)
                     self.backup_field.insert(tk.END, item)
                     self.backup_field.itemconfig(tk.END, {'bg':'red'})
             if errors != []:
-                print('\nThese files had errors (check manually!):')
+                logging.error('\nThese files had errors (check manually!):')
                 for item in errors:
-                    print(item)
+                    logging.error(item)
 
     def examine_report(self, report):
         """Return examined report as dictionary
@@ -436,6 +437,7 @@ class App:
         return examined_report
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.DEBUG)
     DIRS = []
     try:
         with open('last_dirs.log', 'r') as file:
@@ -445,8 +447,8 @@ if __name__ == '__main__':
     except (FileNotFoundError, IndexError):
         STARTING_DIRECTORY = r'.\Demo Source Location'
         BACKUP_DIRECTORY = r'.\Demo Backup Location'
-    print(STARTING_DIRECTORY, BACKUP_DIRECTORY)
+    logging.info('\n\t%s\n\n\t%s\n', STARTING_DIRECTORY, BACKUP_DIRECTORY)
 
     ROOT = tk.Tk()
-    APP = App(ROOT, STARTING_DIRECTORY, BACKUP_DIRECTORY, logging=True)
+    APP = App(ROOT, STARTING_DIRECTORY, BACKUP_DIRECTORY, log_to_file=True)
     ROOT.mainloop()
