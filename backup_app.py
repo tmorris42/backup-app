@@ -117,7 +117,7 @@ def make_changes(dira, dirb, report):
 
 class App:
     """App class is used to hold the backup app window and methods."""
-    def __init__(self, master, srcdir, bakdir):
+    def __init__(self, master, srcdir, bakdir, logging=False):
         self.master = master
         self.source_dir = srcdir
         self.source_directory_variable = tk.StringVar()
@@ -125,7 +125,8 @@ class App:
         self.backup_directory_variable = tk.StringVar()
         self.refresh_directory_variables()
         self.make_window()
-        self.log_file = f'{datetime.now().strftime("%Y-%m-%d-%H-%M-%S")}.log'
+        self.logging = logging
+        self.log_file = f'__logs/{datetime.now().strftime("%Y-%m-%d-%H-%M-%S")}.log'
         self.log((self.source_dir, self.backup_dir), True)
         self.examined_report = dict()
 
@@ -133,11 +134,14 @@ class App:
 
     def log(self, msg, pretty=False):
         """Log messages to the session log file."""
+        if not self.logging:
+            return False
         with open(self.log_file, 'a+') as out:
             if pretty:
                 pprint(msg, stream=out)
             else:
                 out.write(msg)
+        return True
 
     def show_tree(self, which):
         """Show directory tree in display pane.
@@ -444,5 +448,5 @@ if __name__ == '__main__':
     print(STARTING_DIRECTORY, BACKUP_DIRECTORY)
 
     ROOT = tk.Tk()
-    APP = App(ROOT, STARTING_DIRECTORY, BACKUP_DIRECTORY)
+    APP = App(ROOT, STARTING_DIRECTORY, BACKUP_DIRECTORY, logging=True)
     ROOT.mainloop()
