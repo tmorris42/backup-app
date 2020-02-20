@@ -405,6 +405,7 @@ class App:
         aonly = report['added_files']
         bonly = report['removed_files']
         moved = []
+        to_delete = []
 
         # for every file that's only in a, compare to files only in b
         for i, added in enumerate(aonly):
@@ -425,14 +426,21 @@ class App:
                 for j, removed in enumerate(bonly):
                     old_file = os.path.join(dirb, removed)
                     if os.path.isdir(old_file):
-                        report = filecmp.dircmp(new_file, old_file)
-                        if len(report.common) > (len(report.left_only) + len(report.right_only)):
+                        temp_report = filecmp.dircmp(new_file, old_file)
+                        if len(temp_report.common) > (len(temp_report.left_only) + len(temp_report.right_only)):
                             old_path = os.path.join(dirb, bonly[j])
                             new_path = os.path.join(dirb, aonly[i])
                             moved.append((old_path, new_path))
+                            for newly_discovered in temp_report.left_only:
+                                if newly_discovered in examined_report['removed_files']:
+                                    to_delete.append(newly_discovered)
+                                    moved.append((os.path.join(dirb, newly_discovered), os.path.join(new_path, newly_discovered)))
+                            
                             del aonly[i]
                             del bonly[j]
-
+                
+        for deleteable in to_delete:
+            examined_report['removed_files'].remove(deleteable)
         examined_report['moved_files'] = moved
         return examined_report
 
