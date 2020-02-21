@@ -115,6 +115,24 @@ class TestScan(unittest.TestCase):
         self.assertEqual(self.app.examined_report['errors'],
                          [])
         
+    def test_multiple_copies_moved_file(self):
+        shutil.copy('test_src/file1.txt', 'test_src/file1a.txt')
+        shutil.copy('test_src/file1.txt', 'test_src/file1b.txt')
+        shutil.copy('test_src/file1.txt', 'test_src/file1c.txt')
+        shutil.move('test_src/file1.txt', 'test_src/subdir/file1.txt')
+        self.app.scan()
+        self.assertEqual(self.app.examined_report,
+                         {
+                             'added_files': ['file1a.txt', 'file1b.txt',
+                                             'file1c.txt'],
+                             'removed_files': [],
+                             'matched_files': ['subdir\\file2.txt',
+                                               'subdir\\granddir\\file3.txt'],
+                             'mismatched_files': [],
+                             'errors': [],
+                             'moved_files': [('test_bak\\file1.txt', 'test_bak\\subdir\\file1.txt')],
+                             })
+        
     def test_renamed_folder(self):
         os.rename('test_src/subdir', 'test_src/newdir')
         self.app.scan()
