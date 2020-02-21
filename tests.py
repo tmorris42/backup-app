@@ -1,6 +1,7 @@
 import os
 import shutil
 import unittest
+from unittest.mock import Mock, MagicMock
 
 import tkinter as tk
 
@@ -28,6 +29,21 @@ class TestCopyCreatedFiles(unittest.TestCase):
 
         self.assertEqual(self.app.source_field.get(0, tk.END), ())
         self.assertEqual(self.app.examined_report['added_files'], [])
+
+    def test_created_file_multiple_selected(self):
+        with open(f'test_src/new_file.txt', 'w') as out:
+            out.write('this is an added file')
+        with open(f'test_src/new_file2.txt', 'w') as out:
+            out.write('this is another added file')
+        with open(f'test_src/new_file4.txt', 'w') as out:
+            out.write('why not three of them')
+        self.app.scan()
+        self.app.source_field.selection_set(0, 1)
+        self.app.copy_selected()
+        self.assertEqual(self.app.source_field.get(0, tk.END),
+                         ('new_file4.txt',))
+        self.assertEqual(self.app.examined_report['added_files'],
+                         ['new_file4.txt'])
 
     def test_copy_to_b(self):
         with open(f'test_src/new_file.txt', 'w') as out:
