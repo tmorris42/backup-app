@@ -137,11 +137,15 @@ class App:
         """Log messages to the session log file."""
         if not self.log_to_file:
             return False
-        with open(self.log_file, 'a+') as out:
-            if pretty:
-                pprint(msg, stream=out)
-            else:
-                out.write(msg)
+        try:
+            with open(self.log_file, 'a+') as out:
+                if pretty:
+                    pprint(msg, stream=out)
+                else:
+                    out.write(msg)
+        except FileNotFoundError:
+            os.mkdir('__logs/')
+            return self.log(msg, pretty)
         return True
 
     def show_tree(self, which):
