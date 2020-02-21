@@ -6,6 +6,30 @@ import tkinter as tk
 
 import backup_app as ba
 
+class TestSelectFileSource(unittest.TestCase):
+    def setUp(self):
+        for d in ['test_src', 'test_bak']:
+            os.makedirs(f'{d}/subdir/granddir')
+        self.root = tk.Tk()
+        self.app = ba.App(self.root, 'test_src', 'test_bak')
+        
+    def tearDown(self):
+        shutil.rmtree('test_src/')
+        shutil.rmtree('test_bak/')
+        del self.app
+        self.root.destroy()
+        
+    def test_created_file_selected(self):
+        with open(f'test_src/new_file.txt', 'w') as out:
+            out.write('this is an added file')
+        self.app.scan()
+        self.assertEqual(self.app.source_field.get(0, tk.END), ('new_file.txt',))
+        self.app.select_file_source(index=0)
+        
+        self.assertEqual(self.app.source_field.get(0, tk.END), ())
+        self.assertEqual(self.app.examined_report['added_files'], [])
+        
+
 class TestScan(unittest.TestCase):
     def setUp(self):
         for d in ['test_src', 'test_bak']:

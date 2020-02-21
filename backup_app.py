@@ -186,6 +186,7 @@ class App:
             index = self.source_field.nearest(event.y)
         #selected = self.displayEntries[index]
         filename = self.source_field.get(index)
+        self.examined_report['added_files'].remove(filename)
         copy_files_from_a_to_b(self.source_dir, self.backup_dir, [filename])
         self.source_field.delete(index)
 
@@ -456,8 +457,8 @@ if __name__ == '__main__':
                 DIRS.append(line)
         STARTING_DIRECTORY, BACKUP_DIRECTORY = DIRS[0][0:-1], DIRS[1][0:-1]
     except (FileNotFoundError, IndexError):
-        STARTING_DIRECTORY = '.\__Demo Source Location'
-        BACKUP_DIRECTORY = '.\__Demo Backup Location'
+        STARTING_DIRECTORY = '.\\__Demo Source Location'
+        BACKUP_DIRECTORY = '.\\__Demo Backup Location'
     STARTING_DIRECTORY = os.path.abspath(STARTING_DIRECTORY)
     BACKUP_DIRECTORY = os.path.abspath(BACKUP_DIRECTORY)
     logging.debug('\n\t%s\n\n\t%s\n', STARTING_DIRECTORY, BACKUP_DIRECTORY)
