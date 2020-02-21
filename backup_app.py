@@ -190,9 +190,10 @@ class App:
             index = self.source_field.nearest(event.y)
         #selected = self.displayEntries[index]
         filename = self.source_field.get(index)
-        self.examined_report['added_files'].remove(filename)
-        copy_files_from_a_to_b(self.source_dir, self.backup_dir, [filename])
-        self.source_field.delete(index)
+        failed = copy_files_from_a_to_b(self.source_dir, self.backup_dir, [filename])
+        if failed == []:
+            self.examined_report['added_files'].remove(filename)
+            self.source_field.delete(index)
 
     def copy_selected(self):
         """Copy selected files in the changed files list to the backup folder.
