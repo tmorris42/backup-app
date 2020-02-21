@@ -29,6 +29,7 @@ def show_tree(directory):
 
 def copy_files_from_a_to_b(dira, dirb, files, overwrite=False):
     """Copy files from source directory to backup directory."""
+    failed = []
     for filename in files:
         old_path = os.path.join(dira, filename)
         new_path = os.path.join(dirb, filename)
@@ -39,6 +40,7 @@ def copy_files_from_a_to_b(dira, dirb, files, overwrite=False):
 ##                os.mkdir(new_path)
                 shutil.copytree(old_path, new_path)
                 logging.info('Copied!')
+            else: failed.append(filename)
 
         elif os.path.isfile(old_path):
             logging.info('%s --> %s', old_path, new_path)
@@ -49,6 +51,7 @@ def copy_files_from_a_to_b(dira, dirb, files, overwrite=False):
                     send2trash.send2trash(new_path)
                     shutil.copy2(old_path, new_path)
                     logging.info('Copied!\n')
+                else: failed.append(filename)
             else:
                 logging.info('%s --> %s', old_path, new_path)
                 shutil.copy2(old_path, new_path)
@@ -56,8 +59,9 @@ def copy_files_from_a_to_b(dira, dirb, files, overwrite=False):
         else:
             logging.info('%s --> %s', old_path, new_path)
             logging.error("Error! No file found!")
+            failed.append(filename)
     logging.info('done copying files')
-
+    return failed
 
 def delete_files_from_b(dirb, files):
     """Delete files in a given folder.
@@ -200,6 +204,13 @@ class App:
         for item in items:
             self.select_file_source(index=item)
 
+    def copy_all_new_files(self):
+        """Copy all new files in the changed files list to the backup folder."""
+        failed = copy_files_from_a_to_b(self.source_dir, self.backup_dir,
+                                        self.examined_report['added_files'])
+        self.examined_report['added_files'] = failed
+        self.display_examined_results()
+
     def select_file_backup(self, event):
         """Select a file from the changed files list in the backup folder.
 
@@ -227,7 +238,7 @@ class App:
         move_button = tk.Button(self.master, text="Move in Backup",
                                 command=lambda: move_files_in_b(self.examined_report['moved_files']), width=button_width)
         copy_button = tk.Button(self.master, text="Copy to Backup",
-                                command=lambda: copy_files_from_a_to_b(self.source_dir, self.backup_dir, self.examined_report['added_files']),
+                                command=self.copy_all_new_files,
                                 width=button_width)
         copy_selected_button = tk.Button(self.master,
                                          text="Copy Selected to Backup",
