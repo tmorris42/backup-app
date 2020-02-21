@@ -439,10 +439,9 @@ class App:
                                 if newly_discovered in examined_report['removed_files']:
                                     to_delete.append(newly_discovered)
                                     moved.append((os.path.join(dirb, newly_discovered), os.path.join(new_path, newly_discovered)))
-                            
                             del aonly[i]
                             del bonly[j]
-                
+
         for deleteable in to_delete:
             examined_report['removed_files'].remove(deleteable)
         examined_report['moved_files'] = moved
@@ -457,9 +456,11 @@ if __name__ == '__main__':
                 DIRS.append(line)
         STARTING_DIRECTORY, BACKUP_DIRECTORY = DIRS[0][0:-1], DIRS[1][0:-1]
     except (FileNotFoundError, IndexError):
-        STARTING_DIRECTORY = r'.\Demo Source Location'
-        BACKUP_DIRECTORY = r'.\Demo Backup Location'
-    logging.info('\n\t%s\n\n\t%s\n', STARTING_DIRECTORY, BACKUP_DIRECTORY)
+        STARTING_DIRECTORY = '.\__Demo Source Location'
+        BACKUP_DIRECTORY = '.\__Demo Backup Location'
+    STARTING_DIRECTORY = os.path.abspath(STARTING_DIRECTORY)
+    BACKUP_DIRECTORY = os.path.abspath(BACKUP_DIRECTORY)
+    logging.debug('\n\t%s\n\n\t%s\n', STARTING_DIRECTORY, BACKUP_DIRECTORY)
 
     ROOT = tk.Tk()
     APP = App(ROOT, STARTING_DIRECTORY, BACKUP_DIRECTORY, log_to_file=True)
