@@ -10,6 +10,124 @@ import tkinter as tk
 
 import backup_app as ba
 
+class TestFileSystemFunctions(unittest.TestCase):
+    """Tests for the actual filesystem changes."""
+    def setUp(self):
+        for fld in ['test_src', 'test_bak']:
+            os.makedirs(f'{fld}/subdir/granddir')
+        self.root = tk.Tk()
+        self.app = ba.App(self.root, 'test_src', 'test_bak')
+
+    def tearDown(self):
+        shutil.rmtree('test_src/')
+        shutil.rmtree('test_bak/')
+        del self.app
+        self.root.destroy()
+
+    def test_copy_to_b(self):
+        """
+        Test that a file copied to the backup folder is now valid path.
+        """
+        with open(f'test_src/new_file.txt', 'w') as out:
+            out.write('this is an added file')
+        self.app.scan()
+        self.app.copy_all_new_files()
+        self.assertTrue(os.path.exists('test_src/new_file.txt'))
+        self.assertTrue(os.path.exists('test_bak/new_file.txt'))
+
+    def test_copy_to_b_multiple_files(self):
+        """
+        Test that files copied to the backup folder are now valid paths.
+        """
+        with open(f'test_src/new_file.txt', 'w') as out:
+            out.write('this is an added file')
+        with open(f'test_src/new_file2.txt', 'w') as out:
+            out.write('this is an addedagd file')
+        with open(f'test_src/new_file3.txt', 'w') as out:
+            out.write('this is an added fidgale')
+        self.app.scan()
+        self.app.copy_all_new_files()
+        self.assertTrue(os.path.exists('test_src/new_file.txt'))
+        self.assertTrue(os.path.exists('test_bak/new_file.txt'))
+        self.assertTrue(os.path.exists('test_src/new_file2.txt'))
+        self.assertTrue(os.path.exists('test_bak/new_file2.txt'))
+        self.assertTrue(os.path.exists('test_src/new_file3.txt'))
+        self.assertTrue(os.path.exists('test_bak/new_file3.txt'))
+
+    def test_move_in_b(self):
+        """
+        Test that a file moved in the backup folder is no longer valid path
+        at the original point, but is valid at the new location.
+        """
+        with open(f'test_src/new_file.txt', 'w') as out:
+            out.write('this is an added file')
+        with open(f'test_bak/new_file.txt', 'w') as out:
+            out.write('this is an added file')
+        shutil.move('test_src/new_file.txt', 'test_src/subdir/new_file.txt')
+        self.app.scan()
+        self.app.move_files()
+        self.assertTrue(os.path.exists('test_src/subdir/new_file.txt'))
+        self.assertTrue(os.path.exists('test_bak/subdir/new_file.txt'))
+        self.assertFalse(os.path.exists('test_bak/new_file.txt'))
+
+    def test_move_in_b_multiple_files(self):
+        """
+        Test that files moved in the backup folder are no longer valid paths
+        at the original point, but are valid at the new location.
+        """
+        with open(f'test_src/new_file.txt', 'w') as out:
+            out.write('this is an added file')
+        with open(f'test_src/new_file2.txt', 'w') as out:
+            out.write('this is an addedagd file')
+        with open(f'test_src/new_file3.txt', 'w') as out:
+            out.write('this is an added fidgale')
+        with open(f'test_bak/new_file.txt', 'w') as out:
+            out.write('this is an added file')
+        with open(f'test_bak/new_file2.txt', 'w') as out:
+            out.write('this is an addedagd file')
+        with open(f'test_bak/new_file3.txt', 'w') as out:
+            out.write('this is an added fidgale')
+        shutil.move('test_src/new_file.txt', 'test_src/subdir/new_file.txt')
+        shutil.move('test_src/new_file2.txt', 'test_src/subdir/new_file2.txt')
+        shutil.move('test_src/new_file3.txt', 'test_src/subdir/new_file3.txt')
+        self.app.scan()
+        self.app.move_files()
+        self.assertTrue(os.path.exists('test_src/subdir/new_file.txt'))
+        self.assertTrue(os.path.exists('test_bak/subdir/new_file.txt'))
+        self.assertFalse(os.path.exists('test_bak/new_file.txt'))
+        self.assertTrue(os.path.exists('test_src/subdir/new_file2.txt'))
+        self.assertTrue(os.path.exists('test_bak/subdir/new_file2.txt'))
+        self.assertFalse(os.path.exists('test_bak/new_file2.txt'))
+        self.assertTrue(os.path.exists('test_src/subdir/new_file3.txt'))
+        self.assertTrue(os.path.exists('test_bak/subdir/new_file3.txt'))
+        self.assertFalse(os.path.exists('test_bak/new_file3.txt'))
+
+    def test_remove_from_b(self):
+        """
+        Test that a file removed in the backup folder is no longer valid path.
+        """
+        with open(f'test_bak/new_file.txt', 'w') as out:
+            out.write('this is an added file')
+        self.app.scan()
+        self.app.delete_files()
+        self.assertFalse(os.path.exists('test_bak/new_file.txt'))
+
+    def test_remove_from_b_multiple_files(self):
+        """
+        Test that files removed in the backup folder are no longer valid paths.
+        """
+        with open(f'test_bak/new_file.txt', 'w') as out:
+            out.write('this is an added file')
+        with open(f'test_bak/new_file2.txt', 'w') as out:
+            out.write('this is an addedagd file')
+        with open(f'test_bak/new_file3.txt', 'w') as out:
+            out.write('this is an added fidgale')
+        self.app.scan()
+        self.app.delete_files()
+        self.assertFalse(os.path.exists('test_bak/new_file.txt'))
+        self.assertFalse(os.path.exists('test_bak/new_file2.txt'))
+        self.assertFalse(os.path.exists('test_bak/new_file3.txt'))
+
 class TestCopyCreatedFiles(unittest.TestCase):
     """Tests for Copying files found only in the source folder."""
     def setUp(self):
