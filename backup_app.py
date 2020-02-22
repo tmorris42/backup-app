@@ -138,42 +138,48 @@ class Report:
         Look for files that were moved from one location to another.
         Update report and return self.items.
         """
-        moved = []
-        to_delete = []
+        self.items['moved_files'] = []
+        to_delete_ad = []
+        to_delete_rm = []
+        to_delete_rm_val = []
 
         # for every file that's only in a, compare to files only in b
         for i, added in enumerate(self.items['added_files']):
             new_file = os.path.join(self.source, added)
-            new_path = os.path.join(self.backup,
-                                    self.items['added_files'][i])
+            new_path = os.path.join(self.backup, added)
             for j, removed in enumerate(self.items['removed_files']):
                 old_file = os.path.join(self.backup, removed)
-                old_path = os.path.join(self.backup,
-                                        self.items['removed_files'][j])
                 # if file is a file, check for identical files
                 if os.path.isfile(new_file) and os.path.isfile(old_file):
                     if filecmp.cmp(new_file, old_file, shallow=False):
-                        moved.append((old_path, new_path))
-                        del self.items['added_files'][i]
-                        del self.items['removed_files'][j]
+                        self.items['moved_files'].append((old_file, new_path))
+                        to_delete_ad.append(i)
+                        to_delete_rm.append(j)
                 # If file is a dir, check for similar dirs
                 elif os.path.isdir(new_file) and os.path.isdir(old_file):
                     temp_report = filecmp.dircmp(new_file, old_file)
                     length = (len(temp_report.left_only) +
                               len(temp_report.right_only))
                     if len(temp_report.common) > length:
-                        moved.append((old_path, new_path))
+                        self.items['moved_files'].append((old_file, new_path))
                         for new_find in (n for n in temp_report.left_only
                                          if n in self.items['removed_files']):
-                            to_delete.append(new_find)
-                            moved.append((os.path.join(self.backup, new_find),
-                                          os.path.join(new_path, new_find)
-                                         ))
-                        del self.items['added_files'][i]
-                        del self.items['removed_files'][j]
+                            to_delete_rm_val.append(new_find)
+                            self.items['moved_files'].append((
+                                os.path.join(self.backup, new_find),
+                                os.path.join(new_path, new_find)
+                            ))
+                        to_delete_ad.append(i)
+                        to_delete_rm.append(j)
+        to_delete_ad.sort(reverse=True)
+        to_delete_rm.sort(reverse=True)
+        for del_index in to_delete_rm:
+            del self.items['removed_files'][del_index]
+        for del_index in to_delete_ad:
+            del self.items['added_files'][del_index]
         self.items['removed_files'] = [x for x in self.items['removed_files']
-                                       if x not in to_delete]
-        self.items['moved_files'] = moved
+                                       if x not in to_delete_rm_val]
+        #self.items['moved_files'] = moved
         return self
 
 class App:
