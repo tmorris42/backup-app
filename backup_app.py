@@ -119,21 +119,89 @@ def make_changes(dira, dirb, report):
             update_files_a_to_b(dira, dirb, report['mismatched_files'])
     return "quit"
 
+class Report:
+    """Stores a directory scan report."""
+    def __init__(self, report_dict, source=None, backup=None):
+        self.items = report_dict
+        self.source = source
+        self.backup = backup
+
+    def __getitem__(self, key):
+        return self.items[key]
+
+    def __setitem__(self, key, value):
+        self.items[key] = value
+
+    def examine(self):
+        """Return examined report as dictionary
+
+        Look for files that were moved from one location to another.
+        Update report and return self.items.
+        """
+        dira = self.source
+        dirb = self.backup
+        examined_report = self.items
+        aonly = self.items['added_files']
+        bonly = self.items['removed_files']
+        moved = []
+        to_delete = []
+
+        # for every file that's only in a, compare to files only in b
+        for i, added in enumerate(aonly):
+            new_file = os.path.join(dira, added)
+            # if file is a file, check for identical files
+            if os.path.isfile(new_file):
+                for j, removed in enumerate(bonly):
+                    old_file = os.path.join(dirb, removed)
+                    if os.path.isfile(old_file):
+                        if filecmp.cmp(new_file, old_file, shallow=False):
+                            old_path = os.path.join(dirb, bonly[j])
+                            new_path = os.path.join(dirb, aonly[i])
+                            moved.append((old_path, new_path))
+                            del aonly[i]
+                            del bonly[j]
+            # If file is a dir, check for similar dirs
+            elif os.path.isdir(new_file):
+                for j, removed in enumerate(bonly):
+                    old_file = os.path.join(dirb, removed)
+                    if os.path.isdir(old_file):
+                        temp_report = filecmp.dircmp(new_file, old_file)
+                        length = (len(temp_report.left_only) +
+                                  len(temp_report.right_only))
+                        if len(temp_report.common) > length:
+                            old_path = os.path.join(dirb, bonly[j])
+                            new_path = os.path.join(dirb, aonly[i])
+                            moved.append((old_path, new_path))
+                            for newly_discovered in temp_report.left_only:
+                                if newly_discovered in examined_report['removed_files']:
+                                    to_delete.append(newly_discovered)
+                                    moved.append((os.path.join(dirb,
+                                                               newly_discovered),
+                                                  os.path.join(new_path,
+                                                               newly_discovered)
+                                                  ))
+                            del aonly[i]
+                            del bonly[j]
+
+        for deleteable in to_delete:
+            examined_report['removed_files'].remove(deleteable)
+        examined_report['moved_files'] = moved
+        return self
 
 class App:
     """App class is used to hold the backup app window and methods."""
     def __init__(self, master, srcdir, bakdir, log_to_file=False):
         self.master = master
         self.source_dir = srcdir
-        self.source_directory_variable = tk.StringVar()
+        self.source_dir_var = tk.StringVar()
         self.backup_dir = bakdir
-        self.backup_directory_variable = tk.StringVar()
+        self.backup_dir_var = tk.StringVar()
         self.refresh_directory_variables()
         self.make_window()
         self.log_to_file = log_to_file
         self.log_file = f'__logs/{datetime.now().strftime("%Y-%m-%d-%H-%M-%S")}.log'
         self.log((self.source_dir, self.backup_dir), True)
-        self.examined_report = dict()
+        self.examined_report = Report({})
 
         self.show_tree('both')
 
@@ -220,7 +288,21 @@ class App:
             deleted, delete it in the backup location.
             changed, copy it from the source location to the backup location.
         """
-        logging.debug(event.y)
+        logging.debug("%s ::: %s", self.backup_field, event.y)
+
+    def update_files(self):
+        """Command function to call update_files_a_to_b."""
+        update_files_a_to_b(self.source_dir,
+                            self.backup_dir, self.examined_report['mismatched_files'])
+
+    def delete_files(self):
+        """Command function to call delete_files_from_b."""
+        delete_files_from_b(self.backup_dir,
+                            self.examined_report['removed_files'])
+
+    def move_files(self):
+        """Command function to call move_files_in_b."""
+        move_files_in_b(self.examined_report['moved_files'])
 
     def make_window(self):
         """Create the window layout."""
@@ -237,7 +319,7 @@ class App:
         scan_button = tk.Button(self.master, text="Scan",
                                 command=self.scan, width=button_width)
         move_button = tk.Button(self.master, text="Move in Backup",
-                                command=lambda: move_files_in_b(self.examined_report['moved_files']), width=button_width)
+                                command=self.move_files, width=button_width)
         copy_button = tk.Button(self.master, text="Copy to Backup",
                                 command=self.copy_all_new_files,
                                 width=button_width)
@@ -245,9 +327,11 @@ class App:
                                          text="Copy Selected to Backup",
                                          command=self.copy_selected, width=button_width)
         remove_button = tk.Button(self.master, text="Remove from Backup",
-                                  command=lambda: delete_files_from_b(self.backup_dir, self.examined_report['removed_files']), width=button_width)
+                                  command=self.delete_files,
+                                  width=button_width)
         update_button = tk.Button(self.master, text="Update in Backup",
-                                  command=lambda: update_files_a_to_b(self.source_dir, self.backup_dir, self.examined_report['mismatched_files']), width=button_width)
+                                  command=self.update_files,
+                                  width=button_width)
 
         self.source_field.grid(row=1, column=0, rowspan=7, columnspan=2,
                                sticky='nsew')
@@ -263,18 +347,18 @@ class App:
         source_button = tk.Button(self.master,
                                   text="Open Source Folder",
                                   command=self.open_source_directory)
-        source_location_viewer = tk.Entry(self.master,
-                                          textvariable=self.source_directory_variable, state="readonly")
+        source_dir_field = tk.Entry(self.master,
+                                    textvariable=self.source_dir_var, state="readonly")
         source_button.grid(row=0, column=0, sticky='nsew')
-        source_location_viewer.grid(row=0, column=1, sticky='nsew')
+        source_dir_field.grid(row=0, column=1, sticky='nsew')
 
         backup_button = tk.Button(self.master,
                                   text="Open Backup Folder",
                                   command=self.open_backup_directory)
-        backup_location_viewer = tk.Entry(self.master,
-                                          textvariable=self.backup_directory_variable, state="readonly")
+        backup_dir_field = tk.Entry(self.master,
+                                    textvariable=self.backup_dir_var, state="readonly")
         backup_button.grid(row=0, column=3, sticky='nsew')
-        backup_location_viewer.grid(row=0, column=4, sticky='nsew')
+        backup_dir_field.grid(row=0, column=4, sticky='nsew')
 
         self.master.rowconfigure(6, weight=1)
         self.master.columnconfigure(1, weight=1)
@@ -313,22 +397,25 @@ class App:
 
     def refresh_directory_variables(self):
         """Set TK variables to the selected directories."""
-        self.source_directory_variable.set(self.source_dir)
-        self.backup_directory_variable.set(self.backup_dir)
+        self.source_dir_var.set(self.source_dir)
+        self.backup_dir_var.set(self.backup_dir)
 
     def scan(self):
         """Scan the source and backup directories and display results."""
         start = time.time()
-        report = self.compare_directories(self.source_dir, self.backup_dir)
-        self.examined_report = self.examine_report(report)
+        self.examined_report = self.compare_directories().examine()
         self.display_examined_results()
         runtime = time.time()-start
         logging.info('runtime: %d seconds', runtime)
         self.log(self.examined_report, True)
 
-    def compare_directories(self, dira, dirb, recursing=False):
+    def compare_directories(self, dira=None, dirb=None, recursing=False):
         """Compare source and backup directories."""
-        simple_report = {}
+        if not dira:
+            dira = self.source_dir
+        if not dirb:
+            dirb = self.backup_dir
+        simple_report = Report({}, source=dira, backup=dirb)
         #compare directories (This uses shallow comparison!!)
         dirs_cmp = filecmp.dircmp(dira, dirb)
         # Identify files that are only in dira
@@ -410,55 +497,6 @@ class App:
                 logging.error('\nThese files had errors (check manually!):')
                 for item in errors:
                     logging.error(item)
-
-    def examine_report(self, report):
-        """Return examined report as dictionary
-
-        Look for files that were moved from one location to another
-        """
-        dira = self.source_dir
-        dirb = self.backup_dir
-        examined_report = report
-        aonly = report['added_files']
-        bonly = report['removed_files']
-        moved = []
-        to_delete = []
-
-        # for every file that's only in a, compare to files only in b
-        for i, added in enumerate(aonly):
-            new_file = os.path.join(dira, added)
-            # if file is a file, check for identical files
-            if os.path.isfile(new_file):
-                for j, removed in enumerate(bonly):
-                    old_file = os.path.join(dirb, removed)
-                    if os.path.isfile(old_file):
-                        if filecmp.cmp(new_file, old_file, shallow=False):
-                            old_path = os.path.join(dirb, bonly[j])
-                            new_path = os.path.join(dirb, aonly[i])
-                            moved.append((old_path, new_path))
-                            del aonly[i]
-                            del bonly[j]
-            # If file is a dir, check for similar dirs
-            elif os.path.isdir(new_file):
-                for j, removed in enumerate(bonly):
-                    old_file = os.path.join(dirb, removed)
-                    if os.path.isdir(old_file):
-                        temp_report = filecmp.dircmp(new_file, old_file)
-                        if len(temp_report.common) > (len(temp_report.left_only) + len(temp_report.right_only)):
-                            old_path = os.path.join(dirb, bonly[j])
-                            new_path = os.path.join(dirb, aonly[i])
-                            moved.append((old_path, new_path))
-                            for newly_discovered in temp_report.left_only:
-                                if newly_discovered in examined_report['removed_files']:
-                                    to_delete.append(newly_discovered)
-                                    moved.append((os.path.join(dirb, newly_discovered), os.path.join(new_path, newly_discovered)))
-                            del aonly[i]
-                            del bonly[j]
-
-        for deleteable in to_delete:
-            examined_report['removed_files'].remove(deleteable)
-        examined_report['moved_files'] = moved
-        return examined_report
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
