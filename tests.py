@@ -189,7 +189,7 @@ class TestScan(unittest.TestCase):
         shutil.copy('test_src/file1.txt', 'test_src/file1c.txt')
         shutil.move('test_src/file1.txt', 'test_src/subdir/file1.txt')
         self.app.scan()
-        self.assertEqual(self.app.examined_report,
+        self.assertEqual(self.app.examined_report.items,
                          {
                              'added_files': ['file1a.txt', 'file1b.txt',
                                              'file1c.txt'],
@@ -204,7 +204,7 @@ class TestScan(unittest.TestCase):
     def test_renamed_folder(self):
         os.rename('test_src/subdir', 'test_src/newdir')
         self.app.scan()
-        self.assertEqual(self.app.examined_report,
+        self.assertEqual(self.app.examined_report.items,
                          {
                              'added_files': [],
                              'removed_files': [],
@@ -218,7 +218,7 @@ class TestScan(unittest.TestCase):
         shutil.move('test_src/file1.txt', 'test_src/subdir/file1.txt')
         os.rename('test_src/subdir', 'test_src/newdir')
         self.app.scan()
-        self.assertEqual(self.app.examined_report,
+        self.assertEqual(self.app.examined_report.items,
                          {
                              'added_files': [],
                              'removed_files': [],
@@ -235,7 +235,7 @@ class TestScan(unittest.TestCase):
         shutil.move('test_src/file1.txt', 'test_src/subdir/granddir/file1.txt')
         os.rename('test_src/subdir', 'test_src/newdir')
         self.app.scan()
-        self.assertEqual(self.app.examined_report,
+        self.assertEqual(self.app.examined_report.items,
                          {
                              'added_files': [],
                              'removed_files': [],
