@@ -19,14 +19,6 @@ import send2trash
 
 SHALLOW = True
 
-def show_tree(directory):
-    """Print the directory tree."""
-    root_directory = directory
-    for directory_name, _, file_list in os.walk(root_directory):
-        logging.info('Found directory: %s', directory_name)
-        for fname in file_list:
-            logging.info('\t%s', fname)
-
 def copy_files_from_a_to_b(dira, dirb, files, overwrite=False):
     """Copy files from source directory to backup directory."""
     failed = []
@@ -97,27 +89,6 @@ def update_files_a_to_b(dira, dirb, files):
     """Copy files from source directory to backup directory."""
     copy_files_from_a_to_b(dira, dirb, files, overwrite=True)
     logging.info("Done updating")
-
-def make_changes(dira, dirb, report):
-    """Use CLI to update the backup folder."""
-    if len(report['moved_files']) > 0:
-        goto = input('Move Files? Y/N')
-        if goto in ('y', 'Y', 'yes', 'Yes', 'YES'):
-            move_files_in_b(report['moved_files'])
-            return "recheck"
-    if len(report['added_files']) > 0:
-        goto = input('Copy New Files? Y/N')
-        if goto in ('y', 'Y', 'yes', 'Yes', 'YES'):
-            copy_files_from_a_to_b(dira, dirb, report['added_files'])
-    if len(report['removed_files']) > 0:
-        goto = input('Delete Old Files? Y/N')
-        if goto in ('y', 'Y', 'yes', 'Yes', 'YES'):
-            delete_files_from_b(dirb, report['removed_files'])
-    if len(report['mismatched_files']) > 0:
-        goto = input('Update Changed Files? Y/N')
-        if goto in ('y', 'Y', 'yes', 'Yes', 'YES'):
-            update_files_a_to_b(dira, dirb, report['mismatched_files'])
-    return "quit"
 
 class Report:
     """Stores a directory scan report."""
