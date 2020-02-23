@@ -62,12 +62,14 @@ def delete_files_from_b(dirb, files):
     dirb -- folder path
     files -- a list of relative filepaths for files to delete
     """
+    failed = []
     for filepath in files:
         path = os.path.join(dirb, filepath)
         logging.info("deleting %s", path)
         logging.info(path := os.path.normpath(path))
         send2trash.send2trash(path)
     logging.info("Done deleting")
+    return failed
 
 def move_files_in_b(file_sets):
     """Move files from one location to another.
@@ -75,6 +77,7 @@ def move_files_in_b(file_sets):
     Arguments:
     file_sets -- a list of tuples of filepaths (source_path, destination_path)
     """
+    failed = []
     for file_set in file_sets:
         src = file_set[0]
         dest = file_set[1].split(os.path.sep)
@@ -84,6 +87,7 @@ def move_files_in_b(file_sets):
         logging.info('moving FROM:\n%s\nTO:\n%s\n\n\n', src, dest)
         shutil.move(src, dest)
     logging.info('done moving')
+    return failed
 
 def update_files_a_to_b(dira, dirb, files):
     """Copy files from source directory to backup directory."""
@@ -250,7 +254,7 @@ class App:
         self.examined_report['added_files'] = failed
         self.display_examined_results()
 
-    def select_file_backup(self, event):
+    def select_file_backup(self, event=None, index=None):
         """Select a file from the changed files list in the backup folder.
 
         If the file was:
@@ -258,7 +262,37 @@ class App:
             deleted, delete it in the backup location.
             changed, copy it from the source location to the backup location.
         """
-        logging.debug("%s ::: %s", self.backup_field, event.y)
+        logging.debug('Selecting file in backup. event: %s, index: %s', event,
+                      index)
+        if index is None:
+            index = self.backup_field.nearest(event.y)
+            logging.debug('Found index: %s', index)
+        filename = self.backup_field.get(index)
+        # Index order: moved -> mismatched -> removed
+        moved_len = len(self.examined_report['moved_files'])
+        mis_len = moved_len + len(self.examined_report['mismatched_files'])
+        removed_len = mis_len + len(self.examined_report['removed_files'])
+
+        if index < moved_len:
+            filename_set = self.examined_report['moved_files'][index]
+            failed = move_files_in_b([filename_set])
+            if failed == []:
+                self.examined_report['moved_files'].remove(filename_set)
+                self.backup_field.delete(index)
+        elif index < mis_len:
+            failed = copy_files_from_a_to_b(self.source_dir_var.get(),
+                                            self.backup_dir_var.get(),
+                                            [filename],
+                                            overwrite=True)
+            if failed == []:
+                self.examined_report['mismatched_files'].remove(filename)
+                self.backup_field.delete(index)
+        elif index < removed_len:
+            failed = delete_files_from_b(self.backup_dir_var.get(),
+                                         [filename])
+            if failed == []:
+                self.examined_report['removed_files'].remove(filename)
+                self.backup_field.delete(index)
 
     def update_files(self):
         """Command function to call update_files_a_to_b."""
