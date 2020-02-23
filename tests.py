@@ -3,6 +3,7 @@
 
 import os
 import shutil
+import logging
 import unittest
 #from unittest.mock import Mock, MagicMock
 
@@ -174,6 +175,47 @@ class TestCopyCreatedFiles(unittest.TestCase):
                          ('new_file4.txt',))
         self.assertEqual(self.app.examined_report['added_files'],
                          ['new_file4.txt'])
+
+    def test_moved_file_selected(self):
+        """
+        Test that a moved file selected in the backup folder list
+        is removed from the display and the report.
+        """
+        with open(f'test_src/new_file.txt', 'w') as out:
+            out.write('this is an added file')
+        with open(f'test_bak/new_file.txt', 'w') as out:
+            out.write('this is an added file')
+        shutil.move('test_src/new_file.txt', 'test_src/subdir/new_file.txt')
+        self.app.scan()
+        self.app.select_file_backup(index=0)
+        self.assertEqual(self.app.backup_field.get(0, tk.END), ())
+        self.assertEqual(self.app.examined_report['moved_files'], [])
+
+    def test_modified_file_selected(self):
+        """
+        Test that a modified file selected in the backup folder list
+        is removed from the display and the report.
+        """
+        with open(f'test_src/new_file.txt', 'w') as out:
+            out.write('this is an added file')
+        with open(f'test_bak/new_file.txt', 'w') as out:
+            out.write('this is a modified file')
+        self.app.scan()
+        self.app.select_file_backup(index=0)
+        self.assertEqual(self.app.backup_field.get(0, tk.END), ())
+        self.assertEqual(self.app.examined_report['mismatched_files'], [])
+
+    def test_removed_file_selected(self):
+        """
+        Test that a removed file selected in the backup folder list
+        is removed from the display and the report.
+        """
+        with open(f'test_bak/new_file.txt', 'w') as out:
+            out.write('this is a removed file')
+        self.app.scan()
+        self.app.select_file_backup(index=0)
+        self.assertEqual(self.app.backup_field.get(0, tk.END), ())
+        self.assertEqual(self.app.examined_report['removed_files'], [])
 
     def test_copy_to_b(self):
         """
@@ -423,4 +465,5 @@ class TestScan(unittest.TestCase):
                              })
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.ERROR)
     unittest.main()
