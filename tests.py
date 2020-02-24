@@ -11,6 +11,216 @@ import tkinter as tk
 
 import backup_app as ba
 
+class TestCopyFileFromAToB(unittest.TestCase):
+    """Tests copy_files_from_a_to_b function."""
+    def setUp(self):
+        for fld in ['test_src', 'test_bak']:
+            os.makedirs(f'{fld}')
+
+    def tearDown(self):
+        shutil.rmtree('test_src/')
+        shutil.rmtree('test_bak/')
+
+    def test_copy_file(self):
+        """Test that a file is successfully copied."""
+        with open('test_src/new_file.txt', 'w') as out:
+            out.write('this is an added file')
+        failed = ba.copy_files_from_a_to_b('test_src', 'test_bak',
+                                           ['new_file.txt'])
+        self.assertEqual(failed, [])
+        self.assertTrue(os.path.exists('test_src/new_file.txt'))
+        self.assertTrue(os.path.exists('test_bak/new_file.txt'))
+
+    def test_copy_nonexistant_file(self):
+        """Test that a file that does not exist returns a failure."""
+        failed = ba.copy_files_from_a_to_b('test_src', 'test_bak',
+                                           ['new_file.txt'])
+        self.assertFalse(os.path.exists('test_src/new_file.txt'))
+        self.assertFalse(os.path.exists('test_bak/new_file.txt'))
+        self.assertEqual(failed, ['new_file.txt'])
+
+    def test_copy_existing_file(self):
+        """Test that an existing file is not copied."""
+        with open('test_src/new_file.txt', 'w') as out:
+            out.write('this is an added file')
+        with open('test_bak/new_file.txt', 'w') as out:
+            out.write('diff')
+        failed = ba.copy_files_from_a_to_b('test_src', 'test_bak',
+                                           ['new_file.txt'])
+        src, bak = '', ''
+        with open('test_src/new_file.txt', 'r') as filein:
+            for line in filein:
+                src += line
+        with open('test_bak/new_file.txt', 'r') as filein:
+            for line in filein:
+                bak += line
+        self.assertEqual(failed, ['new_file.txt'])
+        self.assertNotEqual(src, bak)
+
+    def test_copy_existing_file_overwriting(self):
+        """Test that an existing file is copied with overwriting."""
+        with open('test_src/new_file.txt', 'w') as out:
+            out.write('this is an added file')
+        with open('test_bak/new_file.txt', 'w') as out:
+            out.write('diff')
+        failed = ba.copy_files_from_a_to_b('test_src', 'test_bak',
+                                           ['new_file.txt'], overwrite=True)
+        src, bak = '', ''
+        with open('test_src/new_file.txt', 'r') as filein:
+            for line in filein:
+                src += line
+        with open('test_bak/new_file.txt', 'r') as filein:
+            for line in filein:
+                bak += line
+        self.assertEqual(failed, [])
+        self.assertEqual(src, bak)
+
+    def test_copy_files(self):
+        """Test that files are successfully copied."""
+        with open(f'test_src/new_file.txt', 'w') as out:
+            out.write('this is an added file')
+        with open(f'test_src/new_file2.txt', 'w') as out:
+            out.write('this is an added file')
+        ba.copy_files_from_a_to_b('test_src', 'test_bak',
+                                  ['new_file.txt', 'new_file2.txt'])
+        self.assertTrue(os.path.exists('test_src/new_file.txt'))
+        self.assertTrue(os.path.exists('test_bak/new_file.txt'))
+        self.assertTrue(os.path.exists('test_src/new_file2.txt'))
+        self.assertTrue(os.path.exists('test_bak/new_file2.txt'))
+
+    def test_copy_folder(self):
+        """Test that a folder is successfully copied."""
+        os.makedirs('test_src/subdir')
+        with open('test_src/subdir/new_file.txt', 'w') as out:
+            out.write('this is an added file')
+        with open('test_src/subdir/new_file2.txt', 'w') as out:
+            out.write('this is an added file')
+        failed = ba.copy_files_from_a_to_b('test_src', 'test_bak',
+                                           ['subdir'])
+        self.assertEqual(failed, [])
+        self.assertTrue(os.path.exists('test_src/subdir/new_file.txt'))
+        self.assertTrue(os.path.exists('test_bak/subdir/new_file.txt'))
+        self.assertTrue(os.path.exists('test_src/subdir/new_file2.txt'))
+        self.assertTrue(os.path.exists('test_bak/subdir/new_file2.txt'))
+
+    def test_copy_existing_folder(self):
+        """Test that an existing folder is not copied."""
+        os.makedirs('test_src/subdir')
+        os.makedirs('test_bak/subdir')
+        with open('test_src/subdir/new_file.txt', 'w') as out:
+            out.write('this is an added file')
+        with open('test_src/subdir/new_file2.txt', 'w') as out:
+            out.write('this is an added file')
+        failed = ba.copy_files_from_a_to_b('test_src', 'test_bak',
+                                           ['subdir'])
+        self.assertEqual(failed, ['subdir'])
+        self.assertTrue(os.path.exists('test_src/subdir/new_file.txt'))
+        self.assertFalse(os.path.exists('test_bak/subdir/new_file.txt'))
+        self.assertTrue(os.path.exists('test_src/subdir/new_file2.txt'))
+        self.assertFalse(os.path.exists('test_bak/subdir/new_file2.txt'))
+
+class TestDeleteFileFromB(unittest.TestCase):
+    """Tests delete_files_from_b function."""
+    def setUp(self):
+        os.makedirs('test_bak')
+
+    def tearDown(self):
+        shutil.rmtree('test_bak/')
+
+    def test_delete_file(self):
+        """Test that a file is deleted."""
+        with open('test_bak/new_file.txt', 'w') as out:
+            out.write('diff')
+        self.assertTrue(os.path.exists('test_bak/new_file.txt'))
+        failed = ba.delete_files_from_b('test_bak', ['new_file.txt'])
+        self.assertFalse(os.path.exists('test_bak/new_file.txt'))
+        self.assertEqual(failed, [])
+
+    def test_delete_nonexistant_file(self):
+        """Test that a nonexistant file returns as failure."""
+        failed = ba.delete_files_from_b('test_bak', ['new_file.txt'])
+        self.assertEqual(failed, ['new_file.txt'])
+        self.assertFalse(os.path.exists('test_bak/new_file.txt'))
+
+class TestMoveFilesInB(unittest.TestCase):
+    """Tests move_files_in_b function."""
+    def setUp(self):
+        os.makedirs('test_bak/subdir')
+
+    def tearDown(self):
+        shutil.rmtree('test_bak/')
+
+    def test_move_file(self):
+        """Test that a file is moved with no failures."""
+        with open('test_bak/new_file.txt', 'w') as out:
+            out.write('diff')
+        src = os.path.abspath('test_bak/new_file.txt')
+        bak = os.path.abspath('test_bak/subdir/new_file.txt')
+        failed = ba.move_files_in_b([(src, bak)])
+        self.assertTrue(os.path.exists('test_bak/subdir/new_file.txt'))
+        self.assertFalse(os.path.exists('test_bak/new_file.txt'))
+        self.assertEqual(failed, [])
+
+    def test_move_files(self):
+        """Test that multiple files are moved with no failures."""
+        with open('test_bak/new_file.txt', 'w') as out:
+            out.write('diff')
+        with open('test_bak/new_file2.txt', 'w') as out:
+            out.write('diff')
+        src = os.path.abspath('test_bak/new_file.txt')
+        bak = os.path.abspath('test_bak/subdir/new_file.txt')
+        src2 = os.path.abspath('test_bak/new_file2.txt')
+        bak2 = os.path.abspath('test_bak/subdir/new_file2.txt')
+        failed = ba.move_files_in_b([(src, bak), (src2, bak2)])
+        self.assertTrue(os.path.exists('test_bak/subdir/new_file.txt'))
+        self.assertFalse(os.path.exists('test_bak/new_file.txt'))
+        self.assertTrue(os.path.exists('test_bak/subdir/new_file2.txt'))
+        self.assertFalse(os.path.exists('test_bak/new_file2.txt'))
+        self.assertEqual(failed, [])
+
+    def test_move_file_overwrite(self):
+        """Test that a file moved onto existing file won't move
+        and will return a failure."""
+        with open('test_bak/new_file.txt', 'w') as out:
+            out.write('diff')
+        with open('test_bak/subdir/new_file.txt', 'w') as out:
+            out.write('blah')
+        src = os.path.abspath('test_bak/new_file.txt')
+        bak = os.path.abspath('test_bak/subdir/new_file.txt')
+        failed = ba.move_files_in_b([(src, bak)])
+        self.assertTrue(os.path.exists('test_bak/subdir/new_file.txt'))
+        self.assertTrue(os.path.exists('test_bak/new_file.txt'))
+        self.assertEqual(failed, [(src, bak)])
+
+class TestUpdateFilesAToB(unittest.TestCase):
+    """Tests copy_files_from_a_to_b function."""
+    def setUp(self):
+        for fld in ['test_src', 'test_bak']:
+            os.makedirs(f'{fld}')
+
+    def tearDown(self):
+        shutil.rmtree('test_src/')
+        shutil.rmtree('test_bak/')
+
+    def test_update_file(self):
+        """Test that an existing file is copied with overwriting."""
+        with open('test_src/new_file.txt', 'w') as out:
+            out.write('this is an added file')
+        with open('test_bak/new_file.txt', 'w') as out:
+            out.write('diff')
+        failed = ba.update_files_a_to_b('test_src', 'test_bak',
+                                        ['new_file.txt'])
+        src, bak = '', ''
+        with open('test_src/new_file.txt', 'r') as filein:
+            for line in filein:
+                src += line
+        with open('test_bak/new_file.txt', 'r') as filein:
+            for line in filein:
+                bak += line
+        self.assertEqual(failed, [])
+        self.assertTrue(src, bak)
+
+
 class TestFileSystemFunctions(unittest.TestCase):
     """Tests for the actual filesystem changes."""
     def setUp(self):
