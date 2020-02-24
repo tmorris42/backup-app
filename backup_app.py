@@ -171,40 +171,57 @@ class Report:
                                        if x not in to_delete_rm_val]
         #self.items['moved_files'] = moved
         return self
+    
+class BackupManager:
+    """Manage the scanning of directories and the copying of files."""
+    def __init__(self, srcdir, bakdir, log_to_file=False):
+        self.source_directory = srcdir
+        self.backup_directory = bakdir
+        if log_to_file:
+            self.log_file = f'__logs/{datetime.now().strftime("%Y-%m-%d-%H-%M-%S")}.log'
+        else:
+            self.log_file = None
+        self.report = Report({})
+
+    def log(self, msg, pretty=False):
+        """Log messages to the session log file."""
+        if not self.log_file:
+            return False
+        elif self.log_file == 'console':
+            if pretty:
+                pprint(msg)
+            else:
+                print(msg)
+        else:
+            try:
+                with open(self.log_file, 'a+') as out:
+                    if pretty:
+                        pprint(msg, stream=out)
+                    else:
+                        out.write(msg)
+            except FileNotFoundError:
+                os.mkdir('__logs/')
+                return self.log(msg, pretty)
+        return True
 
 class App:
     """App class is used to hold the backup app window and methods."""
     def __init__(self, master, srcdir, bakdir, log_to_file=False):
+        self.bm = BackupManager(srcdir, bakdir, log_to_file)
         self.master = master
         self.source_dir_var = tk.StringVar()
         self.backup_dir_var = tk.StringVar()
 
         self.source_dir_var.set(srcdir)
         self.backup_dir_var.set(bakdir)
-
-        self.examined_report = Report({})
-        if log_to_file:
-            self.log_file = f'__logs/{datetime.now().strftime("%Y-%m-%d-%H-%M-%S")}.log'
-        else:
-            self.log_file = None
+        
         self.make_window()
         self.show_tree('both')
         self.log((self.source_dir_var.get(), self.backup_dir_var.get()), True)
 
     def log(self, msg, pretty=False):
         """Log messages to the session log file."""
-        if not self.log_file:
-            return False
-        try:
-            with open(self.log_file, 'a+') as out:
-                if pretty:
-                    pprint(msg, stream=out)
-                else:
-                    out.write(msg)
-        except FileNotFoundError:
-            os.mkdir('__logs/')
-            return self.log(msg, pretty)
-        return True
+        self.bm.log(msg, pretty)
 
     def show_tree(self, which):
         """Show directory tree in display pane.
@@ -248,7 +265,7 @@ class App:
                                         self.backup_dir_var.get(),
                                         [filename])
         if failed == []:
-            self.examined_report['added_files'].remove(filename)
+            self.bm.report['added_files'].remove(filename)
             self.source_field.delete(index)
 
     def copy_selected(self):
@@ -265,8 +282,8 @@ class App:
         """Copy all new files in the changed files list to the backup folder."""
         failed = copy_files_from_a_to_b(self.source_dir_var.get(),
                                         self.backup_dir_var.get(),
-                                        self.examined_report['added_files'])
-        self.examined_report['added_files'] = failed
+                                        self.bm.report['added_files'])
+        self.bm.report['added_files'] = failed
         self.display_examined_results()
 
     def select_file_backup(self, event=None, index=None):
@@ -284,15 +301,15 @@ class App:
             logging.debug('Found index: %s', index)
         filename = self.backup_field.get(index)
         # Index order: moved -> mismatched -> removed
-        moved_len = len(self.examined_report['moved_files'])
-        mis_len = moved_len + len(self.examined_report['mismatched_files'])
-        removed_len = mis_len + len(self.examined_report['removed_files'])
+        moved_len = len(self.bm.report['moved_files'])
+        mis_len = moved_len + len(self.bm.report['mismatched_files'])
+        removed_len = mis_len + len(self.bm.report['removed_files'])
 
         if index < moved_len:
-            filename_set = self.examined_report['moved_files'][index]
+            filename_set = self.bm.report['moved_files'][index]
             failed = move_files_in_b([filename_set])
             if failed == []:
-                self.examined_report['moved_files'].remove(filename_set)
+                self.bm.report['moved_files'].remove(filename_set)
                 self.backup_field.delete(index)
         elif index < mis_len:
             failed = copy_files_from_a_to_b(self.source_dir_var.get(),
@@ -300,28 +317,28 @@ class App:
                                             [filename],
                                             overwrite=True)
             if failed == []:
-                self.examined_report['mismatched_files'].remove(filename)
+                self.bm.report['mismatched_files'].remove(filename)
                 self.backup_field.delete(index)
         elif index < removed_len:
             failed = delete_files_from_b(self.backup_dir_var.get(),
                                          [filename])
             if failed == []:
-                self.examined_report['removed_files'].remove(filename)
+                self.bm.report['removed_files'].remove(filename)
                 self.backup_field.delete(index)
 
     def update_files(self):
         """Command function to call update_files_a_to_b."""
         update_files_a_to_b(self.source_dir_var.get(),
-                            self.backup_dir_var.get(), self.examined_report['mismatched_files'])
+                            self.backup_dir_var.get(), self.bm.report['mismatched_files'])
 
     def delete_files(self):
         """Command function to call delete_files_from_b."""
         delete_files_from_b(self.backup_dir_var.get(),
-                            self.examined_report['removed_files'])
+                            self.bm.report['removed_files'])
 
     def move_files(self):
         """Command function to call move_files_in_b."""
-        move_files_in_b(self.examined_report['moved_files'])
+        move_files_in_b(self.bm.report['moved_files'])
 
     def make_window(self):
         """Create the window layout."""
@@ -418,11 +435,11 @@ class App:
     def scan(self):
         """Scan the source and backup directories and display results."""
         start = time.time()
-        self.examined_report = self.compare_directories().examine()
+        self.bm.report = self.compare_directories().examine()
         self.display_examined_results()
         runtime = time.time()-start
         logging.info('runtime: %d seconds', runtime)
-        self.log(self.examined_report, True)
+        self.log(self.bm.report, True)
 
     def compare_directories(self, dira=None, dirb=None, recursing=False):
         """Compare source and backup directories."""
@@ -474,19 +491,19 @@ class App:
         """Display the results in the display lists"""
         self.source_field.delete(0, tk.END)
         self.backup_field.delete(0, tk.END)
-        for item in self.examined_report['moved_files']:
+        for item in self.bm.report['moved_files']:
             self.backup_field.insert(tk.END, item[0]+'-->'+item[1])
             self.backup_field.itemconfig(tk.END, {'bg':'yellow'})
-        for item in self.examined_report['mismatched_files']:
+        for item in self.bm.report['mismatched_files']:
             self.backup_field.insert(tk.END, item)
             self.backup_field.itemconfig(tk.END, {'bg':'orange'})
-        for item in self.examined_report['added_files']:
+        for item in self.bm.report['added_files']:
             self.source_field.insert(tk.END, item)
             self.source_field.itemconfig(tk.END, {'bg':'green'})
-        for item in self.examined_report['removed_files']:
+        for item in self.bm.report['removed_files']:
             self.backup_field.insert(tk.END, item)
             self.backup_field.itemconfig(tk.END, {'bg':'red'})
-        for item in self.examined_report['errors']:
+        for item in self.bm.report['errors']:
             logging.error('\nThese files had errors (check manually!):')
             logging.error(item)
 

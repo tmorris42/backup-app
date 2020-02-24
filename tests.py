@@ -365,7 +365,7 @@ class TestCopyCreatedFiles(unittest.TestCase):
         self.app.select_file_source(index=0)
 
         self.assertEqual(self.app.source_field.get(0, tk.END), ())
-        self.assertEqual(self.app.examined_report['added_files'], [])
+        self.assertEqual(self.app.bm.report['added_files'], [])
 
     def test_created_file_multiple_selected(self):
         """
@@ -383,7 +383,7 @@ class TestCopyCreatedFiles(unittest.TestCase):
         self.app.copy_selected()
         self.assertEqual(self.app.source_field.get(0, tk.END),
                          ('new_file4.txt',))
-        self.assertEqual(self.app.examined_report['added_files'],
+        self.assertEqual(self.app.bm.report['added_files'],
                          ['new_file4.txt'])
 
     def test_moved_file_selected(self):
@@ -399,7 +399,7 @@ class TestCopyCreatedFiles(unittest.TestCase):
         self.app.scan()
         self.app.select_file_backup(index=0)
         self.assertEqual(self.app.backup_field.get(0, tk.END), ())
-        self.assertEqual(self.app.examined_report['moved_files'], [])
+        self.assertEqual(self.app.bm.report['moved_files'], [])
 
     def test_modified_file_selected(self):
         """
@@ -413,7 +413,7 @@ class TestCopyCreatedFiles(unittest.TestCase):
         self.app.scan()
         self.app.select_file_backup(index=0)
         self.assertEqual(self.app.backup_field.get(0, tk.END), ())
-        self.assertEqual(self.app.examined_report['mismatched_files'], [])
+        self.assertEqual(self.app.bm.report['mismatched_files'], [])
 
     def test_removed_file_selected(self):
         """
@@ -425,7 +425,7 @@ class TestCopyCreatedFiles(unittest.TestCase):
         self.app.scan()
         self.app.select_file_backup(index=0)
         self.assertEqual(self.app.backup_field.get(0, tk.END), ())
-        self.assertEqual(self.app.examined_report['removed_files'], [])
+        self.assertEqual(self.app.bm.report['removed_files'], [])
 
     def test_copy_to_b(self):
         """
@@ -439,12 +439,12 @@ class TestCopyCreatedFiles(unittest.TestCase):
         with open(f'test_src/new_file4.txt', 'w') as out:
             out.write('why not three of them')
         self.app.scan()
-        self.assertEqual(self.app.examined_report['added_files'],
+        self.assertEqual(self.app.bm.report['added_files'],
                          ['new_file.txt', 'new_file2.txt', 'new_file4.txt'])
         self.assertEqual(self.app.source_field.get(0, tk.END),
                          ('new_file.txt', 'new_file2.txt', 'new_file4.txt'))
         self.app.copy_all_new_files()
-        self.assertEqual(self.app.examined_report['added_files'], [])
+        self.assertEqual(self.app.bm.report['added_files'], [])
         self.assertEqual(self.app.source_field.get(0, tk.END), ())
 
 
@@ -474,19 +474,19 @@ class TestScan(unittest.TestCase):
         report.
         """
         self.app.scan()
-        self.assertEqual(self.app.examined_report['matched_files'],
+        self.assertEqual(self.app.bm.report['matched_files'],
                          ['file1.txt',
                           'subdir\\file2.txt',
                           'subdir\\granddir\\file3.txt'])
-        self.assertEqual(self.app.examined_report['mismatched_files'],
+        self.assertEqual(self.app.bm.report['mismatched_files'],
                          [])
-        self.assertEqual(self.app.examined_report['added_files'],
+        self.assertEqual(self.app.bm.report['added_files'],
                          [])
-        self.assertEqual(self.app.examined_report['moved_files'],
+        self.assertEqual(self.app.bm.report['moved_files'],
                          [])
-        self.assertEqual(self.app.examined_report['removed_files'],
+        self.assertEqual(self.app.bm.report['removed_files'],
                          [])
-        self.assertEqual(self.app.examined_report['errors'],
+        self.assertEqual(self.app.bm.report['errors'],
                          [])
 
     def test_new_file(self):
@@ -497,19 +497,19 @@ class TestScan(unittest.TestCase):
         with open(f'test_src/new_file.txt', 'w') as out:
             out.write('this is an added file')
         self.app.scan()
-        self.assertEqual(self.app.examined_report['matched_files'],
+        self.assertEqual(self.app.bm.report['matched_files'],
                          ['file1.txt',
                           'subdir\\file2.txt',
                           'subdir\\granddir\\file3.txt'])
-        self.assertEqual(self.app.examined_report['mismatched_files'],
+        self.assertEqual(self.app.bm.report['mismatched_files'],
                          [])
-        self.assertEqual(self.app.examined_report['added_files'],
+        self.assertEqual(self.app.bm.report['added_files'],
                          ['new_file.txt'])
-        self.assertEqual(self.app.examined_report['moved_files'],
+        self.assertEqual(self.app.bm.report['moved_files'],
                          [])
-        self.assertEqual(self.app.examined_report['removed_files'],
+        self.assertEqual(self.app.bm.report['removed_files'],
                          [])
-        self.assertEqual(self.app.examined_report['errors'],
+        self.assertEqual(self.app.bm.report['errors'],
                          [])
 
     def test_multiple_new_files(self):
@@ -524,7 +524,7 @@ class TestScan(unittest.TestCase):
         with open(f'test_src/new_file4.txt', 'w') as out:
             out.write('why not three of them')
         self.app.scan()
-        self.assertEqual(self.app.examined_report['added_files'],
+        self.assertEqual(self.app.bm.report['added_files'],
                          ['new_file.txt', 'new_file2.txt', 'new_file4.txt'])
 
     def test_new_file_subdir(self):
@@ -535,19 +535,19 @@ class TestScan(unittest.TestCase):
         with open(f'test_src/subdir/new_file2.txt', 'w') as out:
             out.write('this is another added file')
         self.app.scan()
-        self.assertEqual(self.app.examined_report['matched_files'],
+        self.assertEqual(self.app.bm.report['matched_files'],
                          ['file1.txt',
                           'subdir\\file2.txt',
                           'subdir\\granddir\\file3.txt'])
-        self.assertEqual(self.app.examined_report['mismatched_files'],
+        self.assertEqual(self.app.bm.report['mismatched_files'],
                          [])
-        self.assertEqual(self.app.examined_report['added_files'],
+        self.assertEqual(self.app.bm.report['added_files'],
                          ['subdir\\new_file2.txt'])
-        self.assertEqual(self.app.examined_report['moved_files'],
+        self.assertEqual(self.app.bm.report['moved_files'],
                          [])
-        self.assertEqual(self.app.examined_report['removed_files'],
+        self.assertEqual(self.app.bm.report['removed_files'],
                          [])
-        self.assertEqual(self.app.examined_report['errors'],
+        self.assertEqual(self.app.bm.report['errors'],
                          [])
 
     def test_changed_file_subdir(self):
@@ -558,18 +558,18 @@ class TestScan(unittest.TestCase):
         with open(f'test_src/subdir/file2.txt', 'w+') as out:
             out.write('this file changed')
         self.app.scan()
-        self.assertEqual(self.app.examined_report['matched_files'],
+        self.assertEqual(self.app.bm.report['matched_files'],
                          ['file1.txt',
                           'subdir\\granddir\\file3.txt'])
-        self.assertEqual(self.app.examined_report['mismatched_files'],
+        self.assertEqual(self.app.bm.report['mismatched_files'],
                          ['subdir\\file2.txt'])
-        self.assertEqual(self.app.examined_report['added_files'],
+        self.assertEqual(self.app.bm.report['added_files'],
                          [])
-        self.assertEqual(self.app.examined_report['moved_files'],
+        self.assertEqual(self.app.bm.report['moved_files'],
                          [])
-        self.assertEqual(self.app.examined_report['removed_files'],
+        self.assertEqual(self.app.bm.report['removed_files'],
                          [])
-        self.assertEqual(self.app.examined_report['errors'],
+        self.assertEqual(self.app.bm.report['errors'],
                          [])
 
     def test_moved_file(self):
@@ -579,18 +579,18 @@ class TestScan(unittest.TestCase):
         """
         shutil.move('test_src/file1.txt', 'test_src/subdir/file1.txt')
         self.app.scan()
-        self.assertEqual(self.app.examined_report['matched_files'],
+        self.assertEqual(self.app.bm.report['matched_files'],
                          ['subdir\\file2.txt',
                           'subdir\\granddir\\file3.txt'])
-        self.assertEqual(self.app.examined_report['mismatched_files'],
+        self.assertEqual(self.app.bm.report['mismatched_files'],
                          [])
-        self.assertEqual(self.app.examined_report['added_files'],
+        self.assertEqual(self.app.bm.report['added_files'],
                          [])
-        self.assertEqual(self.app.examined_report['moved_files'],
+        self.assertEqual(self.app.bm.report['moved_files'],
                          [('test_bak\\file1.txt', 'test_bak\\subdir\\file1.txt')])
-        self.assertEqual(self.app.examined_report['removed_files'],
+        self.assertEqual(self.app.bm.report['removed_files'],
                          [])
-        self.assertEqual(self.app.examined_report['errors'],
+        self.assertEqual(self.app.bm.report['errors'],
                          [])
 
     @unittest.skip('Known Bug')
@@ -604,7 +604,7 @@ class TestScan(unittest.TestCase):
         shutil.copy('test_src/file1.txt', 'test_src/file1c.txt')
         shutil.move('test_src/file1.txt', 'test_src/subdir/file1.txt')
         self.app.scan()
-        self.assertEqual(self.app.examined_report.items,
+        self.assertEqual(self.app.bm.report.items,
                          {
                              'added_files': ['file1a.txt', 'file1b.txt',
                                              'file1c.txt'],
@@ -623,7 +623,7 @@ class TestScan(unittest.TestCase):
         """
         os.rename('test_src/subdir', 'test_src/newdir')
         self.app.scan()
-        self.assertEqual(self.app.examined_report.items,
+        self.assertEqual(self.app.bm.report.items,
                          {
                              'added_files': [],
                              'removed_files': [],
@@ -641,7 +641,7 @@ class TestScan(unittest.TestCase):
         shutil.move('test_src/file1.txt', 'test_src/subdir/file1.txt')
         os.rename('test_src/subdir', 'test_src/newdir')
         self.app.scan()
-        self.assertEqual(self.app.examined_report.items,
+        self.assertEqual(self.app.bm.report.items,
                          {
                              'added_files': [],
                              'removed_files': [],
@@ -662,7 +662,7 @@ class TestScan(unittest.TestCase):
         shutil.move('test_src/file1.txt', 'test_src/subdir/granddir/file1.txt')
         os.rename('test_src/subdir', 'test_src/newdir')
         self.app.scan()
-        self.assertEqual(self.app.examined_report.items,
+        self.assertEqual(self.app.bm.report.items,
                          {
                              'added_files': [],
                              'removed_files': [],
