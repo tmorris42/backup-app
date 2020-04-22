@@ -2,22 +2,24 @@
 
 """This script is used to maintain an up-to-date backup folder
 
-Compare the current state of a source folder with the current state of the backup folder.
+Compare the current state of a source folder with the current state of the
+backup folder.
 """
 
+import filecmp
 import logging
 import os
-import filecmp
-import time
 import shutil
-from datetime import datetime
+import time
 import tkinter as tk
+from datetime import datetime
+from pprint import pprint
 from tkinter import filedialog
 
-from pprint import pprint
-import send2trash
+import send2trash  # type: ignore
 
 SHALLOW = True
+
 
 # pylint: disable=C0330
 def copy_files_from_a_to_b(dira, dirb, files, overwrite=False):
@@ -34,11 +36,11 @@ def copy_files_from_a_to_b(dira, dirb, files, overwrite=False):
     for filename in files:
         old_path = os.path.join(dira, filename)
         new_path = os.path.join(dirb, filename)
-        ##        logging.debug('if we were copying right now...')
+        #        logging.debug('if we were copying right now...')
         if os.path.isdir(old_path):
             if not os.path.exists(new_path):
                 logging.info("%s --> %s", old_path, new_path)
-                ##                os.mkdir(new_path)
+                #                os.mkdir(new_path)
                 shutil.copytree(old_path, new_path)
                 logging.info("Copied!")
             else:
@@ -91,15 +93,16 @@ def move_files_in_b(file_sets):
     """Move files from one location to another.
 
     Arguments:
-    file_sets -- a list of tuples of abs filepaths (source_path, destination_path)
+    file_sets -- a list of tuples of abs filepaths
+                 (source_path, destination_path)
     """
     failed = []
     for file_set in file_sets:
         src = file_set[0]
         dest = file_set[1].split(os.path.sep)
-        ##        dest = os.path.sep.join(dest[0:-1])
+        #        dest = os.path.sep.join(dest[0:-1])
         dest = os.path.sep.join(dest)
-        ##        move_file_from_a_to_b(src,dest,fn_src)
+        #        move_file_from_a_to_b(src,dest,fn_src)
         if os.path.exists(dest):
             failed.append(file_set)
         else:
@@ -156,7 +159,9 @@ class Report:
                 # If file is a dir, check for similar dirs
                 elif os.path.isdir(new_file) and os.path.isdir(old_file):
                     temp_report = filecmp.dircmp(new_file, old_file)
-                    length = len(temp_report.left_only) + len(temp_report.right_only)
+                    length = len(temp_report.left_only) + len(
+                        temp_report.right_only
+                    )
                     if len(temp_report.common) > length:
                         self.items["moved_files"].append((old_file, new_path))
                         for new_find in (
@@ -193,7 +198,9 @@ class BackupManager:
         self.source_directory = srcdir
         self.backup_directory = bakdir
         if log_to_file:
-            self.log_file = f'__logs/{datetime.now().strftime("%Y-%m-%d-%H-%M-%S")}.log'
+            self.log_file = (
+                f'__logs/{datetime.now().strftime("%Y-%m-%d-%H-%M-%S")}.log'
+            )
         else:
             self.log_file = None
         self.report = Report({})
@@ -237,7 +244,10 @@ class BackupManager:
         # filename)))
         # abs_filenames.append(abs_filename)
         failed = copy_files_from_a_to_b(
-            self.source_directory, self.backup_directory, filenames, overwrite=overwrite
+            self.source_directory,
+            self.backup_directory,
+            filenames,
+            overwrite=overwrite,
         )
         return failed
 
@@ -254,7 +264,9 @@ class BackupManager:
         Return filenames that were not copied.
         """
         failed = copy_files_from_a_to_b(
-            self.source_directory, self.backup_directory, self.report["added_files"]
+            self.source_directory,
+            self.backup_directory,
+            self.report["added_files"],
         )
         self.report["added_files"] = failed
         return failed
@@ -275,7 +287,9 @@ class BackupManager:
 
         Return filenames that were not deleted.
         """
-        return delete_files_from_b(self.backup_directory, self.report["removed_files"])
+        return delete_files_from_b(
+            self.backup_directory, self.report["removed_files"]
+        )
 
     def move_files(self):
         """Move files that were moved in the source directory.
@@ -321,18 +335,18 @@ class App:
             self.show_tree("backup")
             return
 
-        ##        show_tree(folder) # this is just for debug
+        #        show_tree(folder) # this is just for debug
 
-        ### change this to only display current folder
+        # change this to only display current folder
         # display file contents in source display
         display_pane.delete(0, tk.END)
 
-    ##        level=0
-    ##        for directory_name, subdirectory_list, file_list in os.walk(folder):
-    ##            level += 1
-    ##            display_pane.insert(tk.END,'__'*(level-1)+directory_name)
-    ##            for sub in file_list:
-    ##                display_pane.insert(tk.END,'_'*level+sub)
+    #    level=0
+    #    for directory_name, subdirectory_list, file_list in os.walk(folder):
+    #        level += 1
+    #        display_pane.insert(tk.END,'__'*(level-1)+directory_name)
+    #        for sub in file_list:
+    #            display_pane.insert(tk.END,'_'*level+sub)
 
     def select_file_source(self, event=None, index=None):
         """Select a file from the changed files list in the source folder.
@@ -351,7 +365,8 @@ class App:
     def copy_selected(self):
         """Copy selected files in the changed files list to the backup folder.
 
-        Copy each file that has been selected in the source folder list to the backup folder list.
+        Copy each file that has been selected in the source folder list to
+        the backup folder list.
         """
         items = list(map(int, self.source_field.curselection()))
         items.sort(reverse=True)
@@ -359,7 +374,7 @@ class App:
             self.select_file_source(index=item)
 
     def copy_all_new_files(self):
-        """Copy all new files in the changed files list to the backup folder."""
+        """Copy all new files in the changed files list to backup folder."""
         self.manager.copy_added_files()
         self.display_examined_results()
 
@@ -371,7 +386,9 @@ class App:
             deleted, delete it in the backup location.
             changed, copy it from the source location to the backup location.
         """
-        logging.debug("Selecting file in backup. event: %s, index: %s", event, index)
+        logging.debug(
+            "Selecting file in backup. event: %s, index: %s", event, index
+        )
         if index is None:
             index = self.backup_field.nearest(event.y)
             logging.debug("Found index: %s", index)
@@ -419,7 +436,9 @@ class App:
         filemenu = tk.Menu(filebar, tearoff=0)
         filebar.add_cascade(label="File", menu=filemenu)
 
-        self.source_field = tk.Listbox(self.master, width=60, selectmode=tk.EXTENDED)
+        self.source_field = tk.Listbox(
+            self.master, width=60, selectmode=tk.EXTENDED
+        )
         self.backup_field = tk.Listbox(self.master, width=60)
 
         button_width = 20  # button width
@@ -457,17 +476,23 @@ class App:
             width=button_width,
         )
 
-        self.source_field.grid(row=1, column=0, rowspan=7, columnspan=2, sticky="nsew")
+        self.source_field.grid(
+            row=1, column=0, rowspan=7, columnspan=2, sticky="nsew"
+        )
         scan_button.grid(row=1, column=2)
         move_button.grid(row=2, column=2)
         copy_button.grid(row=3, column=2)
         copy_selected_button.grid(row=4, column=2)
         remove_button.grid(row=5, column=2)
         update_button.grid(row=6, column=2)
-        self.backup_field.grid(row=1, column=3, rowspan=7, columnspan=2, sticky="nsew")
+        self.backup_field.grid(
+            row=1, column=3, rowspan=7, columnspan=2, sticky="nsew"
+        )
 
         source_button = tk.Button(
-            self.master, text="Open Source Folder", command=self.open_source_directory
+            self.master,
+            text="Open Source Folder",
+            command=self.open_source_directory,
         )
         source_dir_field = tk.Entry(
             self.master, textvariable=self.source_dir_var, state="readonly"
@@ -476,7 +501,9 @@ class App:
         source_dir_field.grid(row=0, column=1, sticky="nsew")
 
         backup_button = tk.Button(
-            self.master, text="Open Backup Folder", command=self.open_backup_directory
+            self.master,
+            text="Open Backup Folder",
+            command=self.open_backup_directory,
         )
         backup_dir_field = tk.Entry(
             self.master, textvariable=self.backup_dir_var, state="readonly"
@@ -553,13 +580,17 @@ class App:
             simple_report["matched_files"],
             simple_report["mismatched_files"],
             simple_report["errors"],
-        ) = filecmp.cmpfiles(dira, dirb, dirs_cmp.common_files, shallow=SHALLOW)
+        ) = filecmp.cmpfiles(
+            dira, dirb, dirs_cmp.common_files, shallow=SHALLOW
+        )
 
         # Check subfolders
         for common_dir in dirs_cmp.common_dirs:
             new_dira = os.path.join(dira, common_dir)
             new_dirb = os.path.join(dirb, common_dir)
-            sub_report = self.compare_directories(new_dira, new_dirb, recursing=True)
+            sub_report = self.compare_directories(
+                new_dira, new_dirb, recursing=True
+            )
             if not recursing:
                 logging.info("Checking subfolder\n\n\t%s\n", new_dira)
 
@@ -574,10 +605,10 @@ class App:
                 for item in sub_report[key]:
                     simple_report[key].append(os.path.join(common_dir, item))
 
-        ##    for adir in dirs_cmp.left_only:
-        ##        if os.path.isdir(adir):
-        ##            for sub in [x[0] for x in os.walk(adir)]:
-        ##                simple_report['added_files'].append(sub)
+        #    for adir in dirs_cmp.left_only:
+        #        if os.path.isdir(adir):
+        #            for sub in [x[0] for x in os.walk(adir)]:
+        #                simple_report['added_files'].append(sub)
 
         return simple_report
 
