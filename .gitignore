@@ -3,3 +3,5 @@ Demo*
 __*
 *.log
 .pylintrc
+
+.mypy_cache
