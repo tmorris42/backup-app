@@ -178,7 +178,9 @@ class Report:
                             )
                         to_delete_ad.append(i)
                         to_delete_rm.append(j)
+        to_delete_ad = list(set(to_delete_ad))
         to_delete_ad.sort(reverse=True)
+        to_delete_rm = list(set(to_delete_rm))
         to_delete_rm.sort(reverse=True)
         for del_index in to_delete_rm:
             del self.items["removed_files"][del_index]
