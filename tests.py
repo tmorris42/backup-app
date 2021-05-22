@@ -636,9 +636,7 @@ class TestScan(unittest.TestCase):
         )
         self.assertEqual(
             self.app.manager.report.items["moved_files"],
-            [
-                ("test_bak\\file1.txt", "test_bak\\subdir\\file1.txt"),
-            ],
+            [("test_bak\\file1.txt", "test_bak\\subdir\\file1.txt")],
         )
         self.assertEqual(
             self.app.manager.report.items["errors"], [],
