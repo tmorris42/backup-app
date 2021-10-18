@@ -178,7 +178,9 @@ class Report:
                             )
                         to_delete_ad.append(i)
                         to_delete_rm.append(j)
+        to_delete_ad = list(set(to_delete_ad))
         to_delete_ad.sort(reverse=True)
+        to_delete_rm = list(set(to_delete_rm))
         to_delete_rm.sort(reverse=True)
         for del_index in to_delete_rm:
             del self.items["removed_files"][del_index]
@@ -562,6 +564,41 @@ class App:
         logging.info("runtime: %d seconds", runtime)
         self.log(self.manager.report, True)
 
+    def check_subfolders(self, dira, dirb, common_dirs, recursing=False):
+        """Check subfolders of common directories."""
+        report = {
+            "added_files": [],
+            "removed_files": [],
+            "matched_files": [],
+            "mismatched_files": [],
+            "errors": [],
+        }
+        for common_dir in common_dirs:
+            new_dira = os.path.join(dira, common_dir)
+            new_dirb = os.path.join(dirb, common_dir)
+            sub_report = self.compare_directories(
+                new_dira, new_dirb, recursing=True
+            )
+            if not recursing:
+                logging.info("Checking subfolder\n\n\t%s\n", new_dira)
+
+            # add sub report to overall report
+            for key in (
+                "added_files",
+                "removed_files",
+                "matched_files",
+                "mismatched_files",
+                "errors",
+            ):
+                for item in sub_report[key]:
+                    report[key].append(os.path.join(common_dir, item))
+
+        #    for adir in dirs_cmp.left_only:
+        #        if os.path.isdir(adir):
+        #            for sub in [x[0] for x in os.walk(adir)]:
+        #                report['added_files'].append(sub)
+        return report
+
     def compare_directories(self, dira=None, dirb=None, recursing=False):
         """Compare source and backup directories."""
         if not dira:
@@ -585,31 +622,18 @@ class App:
         )
 
         # Check subfolders
-        for common_dir in dirs_cmp.common_dirs:
-            new_dira = os.path.join(dira, common_dir)
-            new_dirb = os.path.join(dirb, common_dir)
-            sub_report = self.compare_directories(
-                new_dira, new_dirb, recursing=True
-            )
-            if not recursing:
-                logging.info("Checking subfolder\n\n\t%s\n", new_dira)
-
-            # add sub report to overall report
-            for key in (
-                "added_files",
-                "removed_files",
-                "matched_files",
-                "mismatched_files",
-                "errors",
-            ):
-                for item in sub_report[key]:
-                    simple_report[key].append(os.path.join(common_dir, item))
-
-        #    for adir in dirs_cmp.left_only:
-        #        if os.path.isdir(adir):
-        #            for sub in [x[0] for x in os.walk(adir)]:
-        #                simple_report['added_files'].append(sub)
-
+        sub_report = self.check_subfolders(
+            dira, dirb, dirs_cmp.common_dirs, recursing
+        )
+        for key in (
+            "added_files",
+            "removed_files",
+            "matched_files",
+            "mismatched_files",
+            "errors",
+        ):
+            for item in sub_report[key]:
+                simple_report[key].append(item)
         return simple_report
 
     def display_examined_results(self):
