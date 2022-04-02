@@ -1,3 +1,9 @@
+"""This script is used to maintain an up-to-date backup folder
+
+Compare the current state of a source folder with the current state of the
+backup folder.
+"""
+
 import os
 from datetime import datetime
 from pprint import pprint

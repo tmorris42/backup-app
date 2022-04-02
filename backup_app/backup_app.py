@@ -303,11 +303,11 @@ class App:
 
             # add sub report to overall report
             for key in (
-                    "added_files",
-                    "removed_files",
-                    "matched_files",
-                    "mismatched_files",
-                    "errors",
+                "added_files",
+                "removed_files",
+                "matched_files",
+                "mismatched_files",
+                "errors",
             ):
                 for item in sub_report[key]:
                     report[key].append(os.path.join(common_dir, item))
@@ -344,13 +344,14 @@ class App:
         sub_report = self.check_subfolders(
             dira, dirb, dirs_cmp.common_dirs, recursing
         )
-        for key in (
+        keys = (
             "added_files",
             "removed_files",
             "matched_files",
             "mismatched_files",
             "errors",
-        ):
+        )
+        for key in keys:
             for item in sub_report[key]:
                 simple_report[key].append(item)
         return simple_report
