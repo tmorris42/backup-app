@@ -7,7 +7,7 @@ import shutil
 import tkinter as tk
 import unittest
 
-import backup_app as ba
+import backup_app.backup_app as ba
 
 # from unittest.mock import Mock, MagicMock
 
