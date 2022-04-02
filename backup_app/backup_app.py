@@ -13,11 +13,12 @@ import time
 import tkinter as tk
 from tkinter import filedialog
 
-from .filesystem import delete_files_from_b, move_files_in_b, delete_files_from_b
-from .report import Report
 from .backup_manager import BackupManager
+from .filesystem import delete_files_from_b, move_files_in_b
+from .report import Report
 
 SHALLOW = True
+
 
 class App:
     """App class is used to hold the backup app window and methods."""
@@ -302,11 +303,11 @@ class App:
 
             # add sub report to overall report
             for key in (
-                "added_files",
-                "removed_files",
-                "matched_files",
-                "mismatched_files",
-                "errors",
+                    "added_files",
+                    "removed_files",
+                    "matched_files",
+                    "mismatched_files",
+                    "errors",
             ):
                 for item in sub_report[key]:
                     report[key].append(os.path.join(common_dir, item))

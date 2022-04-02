@@ -4,6 +4,7 @@ import shutil
 
 import send2trash  # type: ignore
 
+
 # pylint: disable=C0330
 def copy_files_from_a_to_b(dira, dirb, files, overwrite=False):
     """Copy files from source directory to backup directory.

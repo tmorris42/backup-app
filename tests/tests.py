@@ -8,7 +8,7 @@ import tkinter as tk
 import unittest
 
 import backup_app.backup_app as ba
-from backup_app.filesystem import delete_files_from_b, move_files_in_b, delete_files_from_b, copy_files_from_a_to_b, update_files_a_to_b
+from backup_app.filesystem import copy_files_from_a_to_b, update_files_a_to_b
 
 # from unittest.mock import Mock, MagicMock
 
@@ -220,9 +220,7 @@ class TestUpdateFilesAToB(unittest.TestCase):
             out.write("this is an added file")
         with open("test_bak/new_file.txt", "w") as out:
             out.write("diff")
-        failed = update_files_a_to_b(
-            "test_src", "test_bak", ["new_file.txt"]
-        )
+        failed = update_files_a_to_b("test_src", "test_bak", ["new_file.txt"])
         src, bak = "", ""
         with open("test_src/new_file.txt", "r") as filein:
             for line in filein:

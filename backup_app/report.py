@@ -1,6 +1,7 @@
 import filecmp
 import os
 
+
 class Report:
     """Stores a directory scan report."""
 
