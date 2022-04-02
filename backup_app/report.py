@@ -1,3 +1,9 @@
+"""This script is handle reports from backup_app scans
+
+Compare the current state of a source folder with the current state of the
+backup folder.
+"""
+
 import filecmp
 import os
 
@@ -47,11 +53,12 @@ class Report:
                     )
                     if len(temp_report.common) > length:
                         self.items["moved_files"].append((old_file, new_path))
-                        for new_find in (
+                        suspected_moved_files = (
                             n
                             for n in temp_report.left_only
                             if n in self.items["removed_files"]
-                        ):
+                        )
+                        for new_find in suspected_moved_files:
                             to_delete_rm_val.append(new_find)
                             self.items["moved_files"].append(
                                 (

@@ -1,3 +1,5 @@
+"""This script contains functions to move, copy, and delete files from the filesystem"""
+
 import logging
 import os
 import shutil
