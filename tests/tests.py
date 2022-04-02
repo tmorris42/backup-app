@@ -8,6 +8,7 @@ import tkinter as tk
 import unittest
 
 import backup_app.backup_app as ba
+from backup_app.filesystem import copy_files_from_a_to_b, update_files_a_to_b
 
 # from unittest.mock import Mock, MagicMock
 
@@ -27,7 +28,7 @@ class TestCopyFileFromAToB(unittest.TestCase):
         """Test that a file is successfully copied."""
         with open("test_src/new_file.txt", "w") as out:
             out.write("this is an added file")
-        failed = ba.copy_files_from_a_to_b(
+        failed = copy_files_from_a_to_b(
             "test_src", "test_bak", ["new_file.txt"]
         )
         self.assertEqual(failed, [])
@@ -36,7 +37,7 @@ class TestCopyFileFromAToB(unittest.TestCase):
 
     def test_copy_nonexistant_file(self):
         """Test that a file that does not exist returns a failure."""
-        failed = ba.copy_files_from_a_to_b(
+        failed = copy_files_from_a_to_b(
             "test_src", "test_bak", ["new_file.txt"]
         )
         self.assertFalse(os.path.exists("test_src/new_file.txt"))
@@ -49,7 +50,7 @@ class TestCopyFileFromAToB(unittest.TestCase):
             out.write("this is an added file")
         with open("test_bak/new_file.txt", "w") as out:
             out.write("diff")
-        failed = ba.copy_files_from_a_to_b(
+        failed = copy_files_from_a_to_b(
             "test_src", "test_bak", ["new_file.txt"]
         )
         src, bak = "", ""
@@ -68,7 +69,7 @@ class TestCopyFileFromAToB(unittest.TestCase):
             out.write("this is an added file")
         with open("test_bak/new_file.txt", "w") as out:
             out.write("diff")
-        failed = ba.copy_files_from_a_to_b(
+        failed = copy_files_from_a_to_b(
             "test_src", "test_bak", ["new_file.txt"], overwrite=True
         )
         src, bak = "", ""
@@ -87,7 +88,7 @@ class TestCopyFileFromAToB(unittest.TestCase):
             out.write("this is an added file")
         with open("test_src/new_file2.txt", "w") as out:
             out.write("this is an added file")
-        ba.copy_files_from_a_to_b(
+        copy_files_from_a_to_b(
             "test_src", "test_bak", ["new_file.txt", "new_file2.txt"]
         )
         self.assertTrue(os.path.exists("test_src/new_file.txt"))
@@ -102,7 +103,7 @@ class TestCopyFileFromAToB(unittest.TestCase):
             out.write("this is an added file")
         with open("test_src/subdir/new_file2.txt", "w") as out:
             out.write("this is an added file")
-        failed = ba.copy_files_from_a_to_b("test_src", "test_bak", ["subdir"])
+        failed = copy_files_from_a_to_b("test_src", "test_bak", ["subdir"])
         self.assertEqual(failed, [])
         self.assertTrue(os.path.exists("test_src/subdir/new_file.txt"))
         self.assertTrue(os.path.exists("test_bak/subdir/new_file.txt"))
@@ -117,7 +118,7 @@ class TestCopyFileFromAToB(unittest.TestCase):
             out.write("this is an added file")
         with open("test_src/subdir/new_file2.txt", "w") as out:
             out.write("this is an added file")
-        failed = ba.copy_files_from_a_to_b("test_src", "test_bak", ["subdir"])
+        failed = copy_files_from_a_to_b("test_src", "test_bak", ["subdir"])
         self.assertEqual(failed, ["subdir"])
         self.assertTrue(os.path.exists("test_src/subdir/new_file.txt"))
         self.assertFalse(os.path.exists("test_bak/subdir/new_file.txt"))
@@ -219,9 +220,7 @@ class TestUpdateFilesAToB(unittest.TestCase):
             out.write("this is an added file")
         with open("test_bak/new_file.txt", "w") as out:
             out.write("diff")
-        failed = ba.update_files_a_to_b(
-            "test_src", "test_bak", ["new_file.txt"]
-        )
+        failed = update_files_a_to_b("test_src", "test_bak", ["new_file.txt"])
         src, bak = "", ""
         with open("test_src/new_file.txt", "r") as filein:
             for line in filein:
