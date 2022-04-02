@@ -22,6 +22,12 @@ class Report:
     def __setitem__(self, key, value):
         self.items[key] = value
 
+    def _file_already_in_moved_files(self, filename):
+        for file_pair in self.items["moved_files"]:
+            if filename == file_pair[0]:
+                return True
+        return False
+
     def examine(self):
         """Return examined report as dictionary
 
@@ -42,9 +48,12 @@ class Report:
                 # if file is a file, check for identical files
                 if os.path.isfile(new_file) and os.path.isfile(old_file):
                     if filecmp.cmp(new_file, old_file, shallow=False):
-                        self.items["moved_files"].append((old_file, new_path))
-                        to_delete_ad.append(i)
-                        to_delete_rm.append(j)
+                        if not self._file_already_in_moved_files(old_file):
+                            self.items["moved_files"].append(
+                                (old_file, new_path)
+                            )
+                            to_delete_ad.append(i)
+                            to_delete_rm.append(j)
                 # If file is a dir, check for similar dirs
                 elif os.path.isdir(new_file) and os.path.isdir(old_file):
                     temp_report = filecmp.dircmp(new_file, old_file)
