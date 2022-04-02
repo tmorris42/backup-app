@@ -2,8 +2,14 @@ import os
 from datetime import datetime
 from pprint import pprint
 
+from .filesystem import (
+    copy_files_from_a_to_b,
+    delete_files_from_b,
+    move_files_in_b,
+    update_files_a_to_b,
+)
 from .report import Report
-from .filesystem import *
+
 
 class BackupManager:
     """Manage the scanning of directories and the copying of files."""
