@@ -33,7 +33,7 @@ class App:
         self.backup_dir_var.set(bakdir)
 
         self.make_window()
-        self.show_tree("both")
+        # self.show_tree("both")
         self.log((self.source_dir_var.get(), self.backup_dir_var.get()), True)
 
     def log(self, msg, pretty=False):
@@ -46,28 +46,28 @@ class App:
         IN DEVELOPMENT
         """
         if which == "source":
-            # folder = self.source_dir_var.get() # this is just for debug
+            folder = self.source_dir_var.get()
             display_pane = self.source_field
         elif which == "backup":
-            # folder = self.backup_dir_var.get() # this is just for debug
+            folder = self.backup_dir_var.get()
             display_pane = self.backup_field
         elif which == "both":
             self.show_tree("source")
             self.show_tree("backup")
             return
 
-        #        show_tree(folder) # this is just for debug
+        listing = os.listdir(folder)
+        logging.info(f"{os.path.basename(folder)}: {listing}")
 
-        # change this to only display current folder
-        # display file contents in source display
         display_pane.delete(0, tk.END)
-
-    #    level=0
-    #    for directory_name, subdirectory_list, file_list in os.walk(folder):
-    #        level += 1
-    #        display_pane.insert(tk.END,'__'*(level-1)+directory_name)
-    #        for sub in file_list:
-    #            display_pane.insert(tk.END,'_'*level+sub)
+        i = 0
+        for filename in listing:
+            if os.path.isdir(os.path.join(folder, filename)):
+                display_name = u'\U0001F5BF' + f' {os.path.basename(filename)}'
+            else:
+                display_name = f' {os.path.basename(filename)}'
+            display_pane.insert(i, display_name)
+            i += 1
 
     def select_file_source(self, event=None, index=None):
         """Select a file from the changed files list in the source folder.
