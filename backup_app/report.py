@@ -11,7 +11,7 @@ import os
 class Report:
     """Stores a directory scan report."""
 
-    def __init__(self, report_dict, source=None, backup=None):
+    def __init__(self, report_dict={}, source=None, backup=None):
         self.items = report_dict
         self.source = source
         self.backup = backup
@@ -21,6 +21,9 @@ class Report:
 
     def __setitem__(self, key, value):
         self.items[key] = value
+
+    def __contains__(self, key):
+        return key in self.items
 
     def _file_already_in_moved_files(self, filename):
         for file_pair in self.items["moved_files"]:
