@@ -17,11 +17,9 @@ from .backup_manager import BackupManager
 
 SHALLOW = True
 
-E_DIRS = Enum("Directory", "SRC BAK")
-
-
 class App:
     """App class is used to hold the backup app window and methods."""
+    e_dirs = Enum("Directory", "SRC BAK")
 
     def __init__(self, master, srcdir, bakdir, log_to_file=False):
         self.manager = BackupManager(srcdir, bakdir, log_to_file)
@@ -209,7 +207,7 @@ class App:
         source_button = tk.Button(
             self.master,
             text="Open Source Folder",
-            command=lambda: self.open_directory(E_DIRS.SRC),
+            command=lambda: self.open_directory(self.e_dirs.SRC),
         )
         source_dir_field = tk.Entry(
             self.master, textvariable=self.source_dir_var, state="readonly"
@@ -220,7 +218,7 @@ class App:
         backup_button = tk.Button(
             self.master,
             text="Open Backup Folder",
-            command=lambda: self.open_directory(E_DIRS.BAK),
+            command=lambda: self.open_directory(self.e_dirs.BAK),
         )
         backup_dir_field = tk.Entry(
             self.master, textvariable=self.backup_dir_var, state="readonly"
@@ -242,9 +240,9 @@ class App:
     def open_directory(self, e_dir):
         """Select a directory."""
 
-        if e_dir == E_DIRS.SRC:
+        if e_dir == self.e_dirs.SRC:
             dir_var = self.source_dir_var
-        elif e_dir == E_DIRS.BAK:
+        elif e_dir == self.e_dirs.BAK:
             dir_var = self.backup_dir_var
 
         dir_name = filedialog.askdirectory(
