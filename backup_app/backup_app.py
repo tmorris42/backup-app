@@ -6,7 +6,7 @@ Compare the current state of a source folder with the current state of the
 backup folder.
 """
 
-import filecmp
+from enum import Enum
 import logging
 import os
 import time
@@ -19,6 +19,7 @@ from .report import Report
 
 SHALLOW = True
 
+E_DIRS = Enum('Directory', 'SRC BAK')
 
 class App:
     """App class is used to hold the backup app window and methods."""
@@ -211,7 +212,7 @@ class App:
         source_button = tk.Button(
             self.master,
             text="Open Source Folder",
-            command=self.open_source_directory,
+            command=lambda: self.open_directory(E_DIRS.SRC),
         )
         source_dir_field = tk.Entry(
             self.master, textvariable=self.source_dir_var, state="readonly"
@@ -222,7 +223,7 @@ class App:
         backup_button = tk.Button(
             self.master,
             text="Open Backup Folder",
-            command=self.open_backup_directory,
+            command=lambda: self.open_directory(E_DIRS.BAK),
         )
         backup_dir_field = tk.Entry(
             self.master, textvariable=self.backup_dir_var, state="readonly"
@@ -241,38 +242,33 @@ class App:
 
         self.redraw()
 
-    def open_source_directory(self):
-        """Select a source directory."""
-        dir_name = filedialog.askdirectory(
-            parent=self.master,
-            title="Open Source Directory...",
-            initialdir=self.source_dir_var.get(),
-        )
-        dir_name = os.path.normpath(dir_name)
-        if dir_name:
-            self.source_dir_var.set(dir_name)
-            self.manager.source_directory = dir_name
-            self.finish_open()
+    def open_directory(self, e_dir):
+        """Select a directory."""
 
-    def open_backup_directory(self):
-        """Select a backup directory."""
+        if e_dir == E_DIRS.SRC:
+            dir_var = self.source_dir_var
+        elif e_dir == E_DIRS.BAK:
+            dir_var = self.backup_dir_var
+
         dir_name = filedialog.askdirectory(
             parent=self.master,
-            title="Open Backup Directory...",
-            initialdir=self.backup_dir_var.get(),
+            title="Open Directory...",
+            initialdir=dir_var.get(),
         )
         dir_name = os.path.normpath(dir_name)
         if dir_name:
-            self.backup_dir_var.set(dir_name)
-            self.manager.backup_directory = dir_name
+            dir_var.set(dir_name)
             self.finish_open()
 
     def finish_open(self):
         """Clean up after selecting new folder."""
+        self.manager.source_directory = self.source_dir_var.get()
+        self.manager.backup_directory = self.backup_dir_var.get()
         with open("last_dirs.log", "w") as log:
             log.write(self.source_dir_var.get() + "\n")
             log.write(self.backup_dir_var.get() + "\n")
-        self.show_tree("both")
+        self.manager.report.items.clear()
+        # self.show_tree("both")
 
     def scan(self):
         """Scan the source and backup directories and display results."""
