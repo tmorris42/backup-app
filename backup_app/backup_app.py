@@ -17,6 +17,14 @@ from .backup_manager import BackupManager
 
 SHALLOW = True
 
+class ConsoleFrame(tk.Frame):
+    def __init__(self, parent, buttons, *args, **kwargs):
+        tk.Frame.__init__(self, parent, *args, **kwargs)
+        for b in buttons:
+            button = tk.Button(self, text=b[0], command=b[1])
+            button.pack(expand=False, fill=tk.X, side=tk.TOP, anchor="n")        
+
+
 class DirectoryFrame(tk.Frame):
     def __init__(self, parent, *args, **kwargs):
         tk.Frame.__init__(self, parent, *args, **kwargs)
@@ -24,7 +32,7 @@ class DirectoryFrame(tk.Frame):
         self.directory_var = tk.StringVar()
         
         self.listing = tk.Listbox(
-            master=self, width=60, selectmode=tk.EXTENDED
+            master=self, selectmode=tk.EXTENDED
         )
 
         open_folder_button = tk.Button(
@@ -36,9 +44,13 @@ class DirectoryFrame(tk.Frame):
             self, textvariable=self.directory_var, state="readonly"
         )
 
-        open_folder_button.pack(expand=True, fill=tk.BOTH, side=tk.TOP)
-        directory_label.pack(expand=True, fill=tk.BOTH, side=tk.TOP)
-        self.listing.pack(expand=True, fill=tk.BOTH, side=tk.TOP)
+        open_folder_button.grid(row=0, column=0, sticky="new")
+        directory_label.grid(row=1, column=0, sticky="new")
+        self.listing.grid(row=2, column=0, sticky="nsew")
+
+        self.grid_rowconfigure(index=2, weight=1)
+        self.grid_columnconfigure(index=0, weight=1)
+
     
     def open_directory(self):
         """Select a directory."""
@@ -185,66 +197,29 @@ class App(tk.Frame):
         filebar = tk.Menu(self)
         filemenu = tk.Menu(filebar, tearoff=0)
         filebar.add_cascade(label="File", menu=filemenu)
+        self.master.config(menu=filebar)
 
         self.source_panel = DirectoryFrame(self)
         self.source_panel.listing.bind("<Double-Button-1>", self.select_file_source)
-        self.source_panel.grid(row=0, column=0, rowspan=7, columnspan=2, sticky="nsew")
 
         self.backup_panel = DirectoryFrame(self)
         self.backup_panel.listing.bind("<Double-Button-1>", self.select_file_backup)
-        self.backup_panel.grid(
-            row=0, column=3, rowspan=7, columnspan=2, sticky="nsew"
+        
+        buttons = (
+            ("Scan", self.scan),
+            ("Move in Backup", self.move_files),
+            ("Copy to Backup", self.copy_all_new_files),
+            ("Copy Selected to Backup", self.copy_selected),
+            ("Remove from Backup", self.delete_files),
+            ("Update in Backup", self.update_files),
         )
+        self.console = ConsoleFrame(self, buttons)
+        
+        self.source_panel.pack(expand=True, fill=tk.BOTH, side=tk.LEFT, anchor="n")
+        self.console.pack(expand=False, fill=tk.NONE, side=tk.LEFT, anchor="n")
+        self.backup_panel.pack(expand=True, fill=tk.BOTH, side=tk.LEFT, anchor="n")
 
-        button_width = 20  # button width
-        scan_button = tk.Button(
-            self, text="Scan", command=self.scan, width=button_width
-        )
-        move_button = tk.Button(
-            self,
-            text="Move in Backup",
-            command=self.move_files,
-            width=button_width,
-        )
-        copy_button = tk.Button(
-            self,
-            text="Copy to Backup",
-            command=self.copy_all_new_files,
-            width=button_width,
-        )
-        copy_selected_button = tk.Button(
-            self,
-            text="Copy Selected to Backup",
-            command=self.copy_selected,
-            width=button_width,
-        )
-        remove_button = tk.Button(
-            self,
-            text="Remove from Backup",
-            command=self.delete_files,
-            width=button_width,
-        )
-        update_button = tk.Button(
-            self,
-            text="Update in Backup",
-            command=self.update_files,
-            width=button_width,
-        )
-
-        scan_button.grid(row=1, column=2)
-        move_button.grid(row=2, column=2)
-        copy_button.grid(row=3, column=2)
-        copy_selected_button.grid(row=4, column=2)
-        remove_button.grid(row=5, column=2)
-        update_button.grid(row=6, column=2)
-
-        self.rowconfigure(6, weight=1)
-        self.columnconfigure(1, weight=1)
-        self.columnconfigure(4, weight=1)
-
-        self.master.config(menu=filebar)
-
-        self.pack()
+        self.pack(expand=True, fill=tk.BOTH, side=tk.LEFT)
 
     def finish_open(self):
         """Clean up after selecting new folder."""
