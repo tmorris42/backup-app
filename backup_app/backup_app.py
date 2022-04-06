@@ -29,7 +29,7 @@ class DirectoryFrame(tk.Frame):
 
         open_folder_button = tk.Button(
             self,
-            text="Open Source Folder",
+            text="Open Folder",
             command=self.open_directory,
         )
         directory_label = tk.Entry(
@@ -39,8 +39,6 @@ class DirectoryFrame(tk.Frame):
         open_folder_button.pack(expand=True, fill=tk.BOTH, side=tk.TOP)
         directory_label.pack(expand=True, fill=tk.BOTH, side=tk.TOP)
         self.listing.pack(expand=True, fill=tk.BOTH, side=tk.TOP)
-
-        self.listing.bind("<Double-Button-1>", self.parent.select_file_source)
     
     def open_directory(self):
         """Select a directory."""
@@ -59,30 +57,25 @@ class DirectoryFrame(tk.Frame):
 
 class App(tk.Frame):
     """App class is used to hold the backup app window and methods."""
-    e_dirs = Enum("Directory", "SRC BAK")
-
     def __init__(self, master, srcdir, bakdir, log_to_file=False, *args, **kwargs):
         tk.Frame.__init__(self, master, *args, **kwargs)
         self.manager = BackupManager(srcdir, bakdir, log_to_file)
         self.master = master
-        # self.source_dir_var = tk.StringVar()
-        self.backup_dir_var = tk.StringVar()
 
         self.make_window()
 
         self.source_panel.directory_var.set(srcdir)
-        self.backup_dir_var.set(bakdir)
+        self.backup_panel.directory_var.set(bakdir)
+        self.log((self.source_panel.directory_var.get(), self.backup_panel.directory_var.get()), True)
         self.redraw()
         # self.show_tree("both")
-        self.log((self.source_panel.directory_var.get(), self.backup_dir_var.get()), True)
-        self.source_panel.listing.after(200, self.redraw)
 
     def redraw(self):
         """Redraw the GUI."""
         # logging.info("Redrawing!")
         if self.manager and self.manager.report:
             self.display_examined_results()
-        self.backup_field.after(200, self.redraw)
+        self.after(200, self.redraw)
 
     def log(self, msg, pretty=False):
         """Log messages to the session log file."""
@@ -97,8 +90,8 @@ class App(tk.Frame):
             folder = self.source_panel.directory_var.get()
             display_pane = self.source_field
         elif which == "backup":
-            folder = self.backup_dir_var.get()
-            display_pane = self.backup_field
+            folder = self.backup_panel.directory_var.get()
+            display_pane = self.backup_panel.listing
         elif which == "both":
             self.show_tree("source")
             self.show_tree("backup")
@@ -156,9 +149,9 @@ class App(tk.Frame):
             "Selecting file in backup. event: %s, index: %s", event, index
         )
         if index is None:
-            index = self.backup_field.nearest(event.y)
+            index = self.backup_panel.listing.nearest(event.y)
             logging.debug("Found index: %s", index)
-        filename = self.backup_field.get(index)
+        filename = self.backup_panel.listing.get(index)
         moved_len = len(self.manager.report["moved_files"])
         mis_len = moved_len + len(self.manager.report["mismatched_files"])
         removed_len = mis_len + len(self.manager.report["removed_files"])
@@ -194,9 +187,14 @@ class App(tk.Frame):
         filebar.add_cascade(label="File", menu=filemenu)
 
         self.source_panel = DirectoryFrame(self)
+        self.source_panel.listing.bind("<Double-Button-1>", self.select_file_source)
         self.source_panel.grid(row=0, column=0, rowspan=7, columnspan=2, sticky="nsew")
 
-        self.backup_field = tk.Listbox(self, width=60, selectmode=tk.EXTENDED)
+        self.backup_panel = DirectoryFrame(self)
+        self.backup_panel.listing.bind("<Double-Button-1>", self.select_file_backup)
+        self.backup_panel.grid(
+            row=0, column=3, rowspan=7, columnspan=2, sticky="nsew"
+        )
 
         button_width = 20  # button width
         scan_button = tk.Button(
@@ -233,40 +231,12 @@ class App(tk.Frame):
             width=button_width,
         )
 
-        # self.source_field.grid(
-        #     row=1, column=0, rowspan=7, columnspan=2, sticky="nsew"
-        # )
         scan_button.grid(row=1, column=2)
         move_button.grid(row=2, column=2)
         copy_button.grid(row=3, column=2)
         copy_selected_button.grid(row=4, column=2)
         remove_button.grid(row=5, column=2)
         update_button.grid(row=6, column=2)
-        self.backup_field.grid(
-            row=1, column=3, rowspan=7, columnspan=2, sticky="nsew"
-        )
-
-        # source_button = tk.Button(
-        #     self.master,
-        #     text="Open Source Folder",
-        #     command=lambda: self.open_directory(self.e_dirs.SRC),
-        # )
-        # source_dir_field = tk.Entry(
-        #     self.master, textvariable=self.source_dir_var, state="readonly"
-        # )
-        # source_button.grid(row=0, column=0, sticky="nsew")
-        # source_dir_field.grid(row=0, column=1, sticky="nsew")
-
-        backup_button = tk.Button(
-            self,
-            text="Open Backup Folder",
-            command=lambda: self.open_directory(self.e_dirs.BAK),
-        )
-        backup_dir_field = tk.Entry(
-            self, textvariable=self.backup_dir_var, state="readonly"
-        )
-        backup_button.grid(row=0, column=3, sticky="nsew")
-        backup_dir_field.grid(row=0, column=4, sticky="nsew")
 
         self.rowconfigure(6, weight=1)
         self.columnconfigure(1, weight=1)
@@ -274,35 +244,15 @@ class App(tk.Frame):
 
         self.master.config(menu=filebar)
 
-        # self.source_field.bind("<Double-Button-1>", self.select_file_source)
-        self.backup_field.bind("<Double-Button-1>", self.select_file_backup)
         self.pack()
-
-    # def open_directory(self, e_dir):
-    #     """Select a directory."""
-
-    #     if e_dir == self.e_dirs.SRC:
-    #         dir_var = self.source_dir_var
-    #     elif e_dir == self.e_dirs.BAK:
-    #         dir_var = self.backup_dir_var
-
-    #     dir_name = filedialog.askdirectory(
-    #         parent=self.master,
-    #         title="Open Directory...",
-    #         initialdir=dir_var.get(),
-    #     )
-    #     dir_name = os.path.normpath(dir_name)
-    #     if dir_name:
-    #         dir_var.set(dir_name)
-    #         self.finish_open()
 
     def finish_open(self):
         """Clean up after selecting new folder."""
         self.manager.source_directory = self.source_panel.directory_var.get()
-        self.manager.backup_directory = self.backup_dir_var.get()
+        self.manager.backup_directory = self.backup_panel.directory_var.get()
         with open("last_dirs.log", "w", encoding="utf-8") as log:
             log.write(self.source_panel.directory_var.get() + "\n")
-            log.write(self.backup_dir_var.get() + "\n")
+            log.write(self.backup_panel.directory_var.get() + "\n")
         self.manager.report.items.clear()
         # self.show_tree("both")
 
@@ -311,9 +261,8 @@ class App(tk.Frame):
         start = time.time()
         # self.manager.report = self.compare_directories().examine()
         srcdir = self.source_panel.directory_var.get()
-        bakdir = self.backup_dir_var.get()
+        bakdir = self.backup_panel.directory_var.get()
         self.manager.scan(srcdir, bakdir)
-        self.redraw()
         runtime = time.time() - start
         logging.info("runtime: %d seconds", runtime)
         self.log(self.manager.report, True)
@@ -321,24 +270,24 @@ class App(tk.Frame):
     def display_examined_results(self):
         """Display the results in the display lists"""
         self.source_panel.listing.delete(0, tk.END)
-        self.backup_field.delete(0, tk.END)
+        self.backup_panel.listing.delete(0, tk.END)
         if self.manager and self.manager.report:
             if "moved_files" in self.manager.report:
                 for item in self.manager.report["moved_files"]:
-                    self.backup_field.insert(tk.END, item[0] + "-->" + item[1])
-                    self.backup_field.itemconfig(tk.END, {"bg": "yellow"})
+                    self.backup_panel.listing.insert(tk.END, item[0] + "-->" + item[1])
+                    self.backup_panel.listing.itemconfig(tk.END, {"bg": "yellow"})
             if "mismatched_files" in self.manager.report:
                 for item in self.manager.report["mismatched_files"]:
-                    self.backup_field.insert(tk.END, item)
-                    self.backup_field.itemconfig(tk.END, {"bg": "orange"})
+                    self.backup_panel.listing.insert(tk.END, item)
+                    self.backup_panel.listing.itemconfig(tk.END, {"bg": "orange"})
             if "added_files" in self.manager.report:
                 for item in self.manager.report["added_files"]:
                     self.source_panel.listing.insert(tk.END, item)
                     self.source_panel.listing.itemconfig(tk.END, {"bg": "green"})
             if "removed_files" in self.manager.report:
                 for item in self.manager.report["removed_files"]:
-                    self.backup_field.insert(tk.END, item)
-                    self.backup_field.itemconfig(tk.END, {"bg": "red"})
+                    self.backup_panel.listing.insert(tk.END, item)
+                    self.backup_panel.listing.itemconfig(tk.END, {"bg": "red"})
             if "errors" in self.manager.report:
                 for item in self.manager.report["errors"]:
                     logging.error(
