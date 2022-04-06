@@ -1,5 +1,5 @@
 ECHO OFF
-python -m isort -q --skip .\env\
+python -m isort -q . --skip .\env\
 python -m black -q --line-length 79 backup_app
 python -m black -q --line-length 79 tests
 python -m mypy --warn-unused-ignores .
