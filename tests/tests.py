@@ -17,12 +17,14 @@ class TestCopyFileFromAToB(unittest.TestCase):
     """Tests copy_files_from_a_to_b function."""
 
     def setUp(self):
+        shutil.rmtree("test_src/", ignore_errors=True)
+        shutil.rmtree("test_bak/", ignore_errors=True)
         for fld in ["test_src", "test_bak"]:
             os.makedirs(f"{fld}")
 
     def tearDown(self):
-        shutil.rmtree("test_src/")
-        shutil.rmtree("test_bak/")
+        shutil.rmtree("test_src/", ignore_errors=True)
+        shutil.rmtree("test_bak/", ignore_errors=True)
 
     def test_copy_file(self):
         """Test that a file is successfully copied."""
@@ -130,10 +132,13 @@ class TestDeleteFileFromB(unittest.TestCase):
     """Tests delete_files_from_b function."""
 
     def setUp(self):
+        shutil.rmtree("test_src/", ignore_errors=True)
+        shutil.rmtree("test_bak/", ignore_errors=True)
         os.makedirs("test_bak")
 
     def tearDown(self):
-        shutil.rmtree("test_bak/")
+        shutil.rmtree("test_src/", ignore_errors=True)
+        shutil.rmtree("test_bak/", ignore_errors=True)
 
     def test_delete_file(self):
         """Test that a file is deleted."""
@@ -155,10 +160,13 @@ class TestMoveFilesInB(unittest.TestCase):
     """Tests move_files_in_b function."""
 
     def setUp(self):
+        shutil.rmtree("test_src/", ignore_errors=True)
+        shutil.rmtree("test_bak/", ignore_errors=True)
         os.makedirs("test_bak/subdir")
 
     def tearDown(self):
-        shutil.rmtree("test_bak/")
+        shutil.rmtree("test_src/", ignore_errors=True)
+        shutil.rmtree("test_bak/", ignore_errors=True)
 
     def test_move_file(self):
         """Test that a file is moved with no failures."""
@@ -207,12 +215,14 @@ class TestUpdateFilesAToB(unittest.TestCase):
     """Tests copy_files_from_a_to_b function."""
 
     def setUp(self):
+        shutil.rmtree("test_src/", ignore_errors=True)
+        shutil.rmtree("test_bak/", ignore_errors=True)
         for fld in ["test_src", "test_bak"]:
             os.makedirs(f"{fld}")
 
     def tearDown(self):
-        shutil.rmtree("test_src/")
-        shutil.rmtree("test_bak/")
+        shutil.rmtree("test_src/", ignore_errors=True)
+        shutil.rmtree("test_bak/", ignore_errors=True)
 
     def test_update_file(self):
         """Test that an existing file is copied with overwriting."""
@@ -236,14 +246,16 @@ class TestFileSystemFunctions(unittest.TestCase):
     """Tests for the actual filesystem changes."""
 
     def setUp(self):
+        shutil.rmtree("test_src/", ignore_errors=True)
+        shutil.rmtree("test_bak/", ignore_errors=True)
         for fld in ["test_src", "test_bak"]:
             os.makedirs(f"{fld}/subdir/granddir")
         self.root = tk.Tk()
         self.app = ba.App(self.root, "test_src", "test_bak")
 
     def tearDown(self):
-        shutil.rmtree("test_src/")
-        shutil.rmtree("test_bak/")
+        shutil.rmtree("test_src/", ignore_errors=True)
+        shutil.rmtree("test_bak/", ignore_errors=True)
         del self.app
         self.root.destroy()
 
@@ -356,14 +368,16 @@ class TestCopyCreatedFiles(unittest.TestCase):
     """Tests for Copying files found only in the source folder."""
 
     def setUp(self):
+        shutil.rmtree("test_src/", ignore_errors=True)
+        shutil.rmtree("test_bak/", ignore_errors=True)
         for fld in ["test_src", "test_bak"]:
             os.makedirs(f"{fld}/subdir/granddir")
         self.root = tk.Tk()
         self.app = ba.App(self.root, "test_src", "test_bak")
 
     def tearDown(self):
-        shutil.rmtree("test_src/")
-        shutil.rmtree("test_bak/")
+        shutil.rmtree("test_src/", ignore_errors=True)
+        shutil.rmtree("test_bak/", ignore_errors=True)
         del self.app
         self.root.destroy()
 
@@ -379,7 +393,7 @@ class TestCopyCreatedFiles(unittest.TestCase):
             self.app.source_field.get(0, tk.END), ("new_file.txt",)
         )
         self.app.select_file_source(index=0)
-
+        self.app.redraw()
         self.assertEqual(self.app.source_field.get(0, tk.END), ())
         self.assertEqual(self.app.manager.report["added_files"], [])
 
@@ -397,6 +411,7 @@ class TestCopyCreatedFiles(unittest.TestCase):
         self.app.scan()
         self.app.source_field.selection_set(0, 1)
         self.app.copy_selected()
+        self.app.redraw()
         self.assertEqual(
             self.app.source_field.get(0, tk.END), ("new_file4.txt",)
         )
@@ -416,6 +431,7 @@ class TestCopyCreatedFiles(unittest.TestCase):
         shutil.move("test_src/new_file.txt", "test_src/subdir/new_file.txt")
         self.app.scan()
         self.app.select_file_backup(index=0)
+        self.app.redraw()
         self.assertEqual(self.app.backup_field.get(0, tk.END), ())
         self.assertEqual(self.app.manager.report["moved_files"], [])
 
@@ -430,6 +446,7 @@ class TestCopyCreatedFiles(unittest.TestCase):
             out.write("this is a modified file")
         self.app.scan()
         self.app.select_file_backup(index=0)
+        self.app.redraw()
         self.assertEqual(self.app.backup_field.get(0, tk.END), ())
         self.assertEqual(self.app.manager.report["mismatched_files"], [])
 
@@ -442,6 +459,7 @@ class TestCopyCreatedFiles(unittest.TestCase):
             out.write("this is a removed file")
         self.app.scan()
         self.app.select_file_backup(index=0)
+        self.app.redraw()
         self.assertEqual(self.app.backup_field.get(0, tk.END), ())
         self.assertEqual(self.app.manager.report["removed_files"], [])
 
@@ -461,11 +479,13 @@ class TestCopyCreatedFiles(unittest.TestCase):
             self.app.manager.report["added_files"],
             ["new_file.txt", "new_file2.txt", "new_file4.txt"],
         )
+        self.app.redraw()
         self.assertEqual(
             self.app.source_field.get(0, tk.END),
             ("new_file.txt", "new_file2.txt", "new_file4.txt"),
         )
         self.app.copy_all_new_files()
+        self.app.redraw()
         self.assertEqual(self.app.manager.report["added_files"], [])
         self.assertEqual(self.app.source_field.get(0, tk.END), ())
 
@@ -474,6 +494,8 @@ class TestScan(unittest.TestCase):
     """Tests for scanning source and backup folders and finding files."""
 
     def setUp(self):
+        shutil.rmtree("test_src/", ignore_errors=True)
+        shutil.rmtree("test_bak/", ignore_errors=True)
         for fld in ["test_src", "test_bak"]:
             os.makedirs(f"{fld}/subdir/granddir")
             with open(f"{fld}/file1.txt", "w") as out:
@@ -486,8 +508,8 @@ class TestScan(unittest.TestCase):
         self.app = ba.App(self.root, "test_src", "test_bak")
 
     def tearDown(self):
-        shutil.rmtree("test_src/")
-        shutil.rmtree("test_bak/")
+        shutil.rmtree("test_src/", ignore_errors=True)
+        shutil.rmtree("test_bak/", ignore_errors=True)
         del self.app
         self.root.destroy()
 
