@@ -17,23 +17,67 @@ from .backup_manager import BackupManager
 
 SHALLOW = True
 
-class App:
+class SourcePanel(tk.Frame):
+    def __init__(self, parent, *args, **kwargs):
+        tk.Frame.__init__(self, parent, *args, **kwargs)
+        self.parent = parent
+        self.directory_var = tk.StringVar()
+        
+        self.source_field = tk.Listbox(
+            master=self, width=60, selectmode=tk.EXTENDED
+        )
+
+        source_button = tk.Button(
+            self,
+            text="Open Source Folder",
+            command=self.open_directory,
+        )
+        source_dir_field = tk.Entry(
+            self, textvariable=self.directory_var, state="readonly"
+        )
+        # source_button.grid(row=0, column=0, sticky="nsew")
+        # source_dir_field.grid(row=0, column=1, sticky="nsew")
+
+        source_dir_field.pack(expand=True, fill=tk.BOTH, side=tk.TOP)
+        source_button.pack(expand=True, fill=tk.BOTH, side=tk.TOP)
+        self.source_field.pack(expand=True, fill=tk.BOTH, side=tk.TOP)
+
+        self.source_field.bind("<Double-Button-1>", self.parent.select_file_source)
+    
+    def open_directory(self):
+        """Select a directory."""
+
+        dir_var = self.directory_var
+
+        dir_name = filedialog.askdirectory(
+            parent=self.master,
+            title="Open Directory...",
+            initialdir=dir_var.get(),
+        )
+        dir_name = os.path.normpath(dir_name)
+        if dir_name:
+            dir_var.set(dir_name)
+            self.master.finish_open()
+
+class App(tk.Frame):
     """App class is used to hold the backup app window and methods."""
     e_dirs = Enum("Directory", "SRC BAK")
 
-    def __init__(self, master, srcdir, bakdir, log_to_file=False):
+    def __init__(self, master, srcdir, bakdir, log_to_file=False, *args, **kwargs):
+        tk.Frame.__init__(self, master, *args, **kwargs)
         self.manager = BackupManager(srcdir, bakdir, log_to_file)
         self.master = master
-        self.source_dir_var = tk.StringVar()
+        # self.source_dir_var = tk.StringVar()
         self.backup_dir_var = tk.StringVar()
 
-        self.source_dir_var.set(srcdir)
-        self.backup_dir_var.set(bakdir)
-
         self.make_window()
+
+        self.source_panel.directory_var.set(srcdir)
+        self.backup_dir_var.set(bakdir)
+        self.redraw()
         # self.show_tree("both")
-        self.log((self.source_dir_var.get(), self.backup_dir_var.get()), True)
-        self.source_field.after(200, self.redraw)
+        self.log((self.source_panel.directory_var.get(), self.backup_dir_var.get()), True)
+        self.source_panel.source_field.after(200, self.redraw)
 
     def redraw(self):
         """Redraw the GUI."""
@@ -52,7 +96,7 @@ class App:
         IN DEVELOPMENT
         """
         if which == "source":
-            folder = self.source_dir_var.get()
+            folder = self.source_panel.directory_var.get()
             display_pane = self.source_field
         elif which == "backup":
             folder = self.backup_dir_var.get()
@@ -82,8 +126,8 @@ class App:
             created, copy it from the source location to the backup location.
         """
         if index is None:
-            index = self.source_field.nearest(event.y)
-        filename = self.source_field.get(index)
+            index = self.source_panel.source_field.nearest(event.y)
+        filename = self.source_panel.source_field.get(index)
         failed = self.manager.copy_added_file(filename)
         logging.error("The following files failed: %s", failed)
 
@@ -93,7 +137,7 @@ class App:
         Copy each file that has been selected in the source folder list to
         the backup folder list.
         """
-        items = list(map(int, self.source_field.curselection()))
+        items = list(map(int, self.source_panel.source_field.curselection()))
         items.sort(reverse=True)
         for item in items:
             self.select_file_source(index=item)
@@ -147,53 +191,56 @@ class App:
     def make_window(self):
         """Create the window layout."""
         self.master.winfo_toplevel().title("Backup Master")
-        filebar = tk.Menu(self.master)
+        filebar = tk.Menu(self)
         filemenu = tk.Menu(filebar, tearoff=0)
         filebar.add_cascade(label="File", menu=filemenu)
 
-        self.source_field = tk.Listbox(
-            self.master, width=60, selectmode=tk.EXTENDED
-        )
-        self.backup_field = tk.Listbox(self.master, width=60)
+        self.source_panel = SourcePanel(self)
+        self.source_panel.grid(row=1, column=0, rowspan=7, columnspan=2, sticky="nsew")
+
+        # self.source_field = tk.Listbox(
+        #     self.master, width=60, selectmode=tk.EXTENDED
+        # )
+        self.backup_field = tk.Listbox(self, width=60, selectmode=tk.EXTENDED)
 
         button_width = 20  # button width
         scan_button = tk.Button(
-            self.master, text="Scan", command=self.scan, width=button_width
+            self, text="Scan", command=self.scan, width=button_width
         )
         move_button = tk.Button(
-            self.master,
+            self,
             text="Move in Backup",
             command=self.move_files,
             width=button_width,
         )
         copy_button = tk.Button(
-            self.master,
+            self,
             text="Copy to Backup",
             command=self.copy_all_new_files,
             width=button_width,
         )
         copy_selected_button = tk.Button(
-            self.master,
+            self,
             text="Copy Selected to Backup",
             command=self.copy_selected,
             width=button_width,
         )
         remove_button = tk.Button(
-            self.master,
+            self,
             text="Remove from Backup",
             command=self.delete_files,
             width=button_width,
         )
         update_button = tk.Button(
-            self.master,
+            self,
             text="Update in Backup",
             command=self.update_files,
             width=button_width,
         )
 
-        self.source_field.grid(
-            row=1, column=0, rowspan=7, columnspan=2, sticky="nsew"
-        )
+        # self.source_field.grid(
+        #     row=1, column=0, rowspan=7, columnspan=2, sticky="nsew"
+        # )
         scan_button.grid(row=1, column=2)
         move_button.grid(row=2, column=2)
         copy_button.grid(row=3, column=2)
@@ -204,63 +251,62 @@ class App:
             row=1, column=3, rowspan=7, columnspan=2, sticky="nsew"
         )
 
-        source_button = tk.Button(
-            self.master,
-            text="Open Source Folder",
-            command=lambda: self.open_directory(self.e_dirs.SRC),
-        )
-        source_dir_field = tk.Entry(
-            self.master, textvariable=self.source_dir_var, state="readonly"
-        )
-        source_button.grid(row=0, column=0, sticky="nsew")
-        source_dir_field.grid(row=0, column=1, sticky="nsew")
+        # source_button = tk.Button(
+        #     self.master,
+        #     text="Open Source Folder",
+        #     command=lambda: self.open_directory(self.e_dirs.SRC),
+        # )
+        # source_dir_field = tk.Entry(
+        #     self.master, textvariable=self.source_dir_var, state="readonly"
+        # )
+        # source_button.grid(row=0, column=0, sticky="nsew")
+        # source_dir_field.grid(row=0, column=1, sticky="nsew")
 
         backup_button = tk.Button(
-            self.master,
+            self,
             text="Open Backup Folder",
             command=lambda: self.open_directory(self.e_dirs.BAK),
         )
         backup_dir_field = tk.Entry(
-            self.master, textvariable=self.backup_dir_var, state="readonly"
+            self, textvariable=self.backup_dir_var, state="readonly"
         )
         backup_button.grid(row=0, column=3, sticky="nsew")
         backup_dir_field.grid(row=0, column=4, sticky="nsew")
 
-        self.master.rowconfigure(6, weight=1)
-        self.master.columnconfigure(1, weight=1)
-        self.master.columnconfigure(4, weight=1)
+        self.rowconfigure(6, weight=1)
+        self.columnconfigure(1, weight=1)
+        self.columnconfigure(4, weight=1)
 
         self.master.config(menu=filebar)
 
-        self.source_field.bind("<Double-Button-1>", self.select_file_source)
+        # self.source_field.bind("<Double-Button-1>", self.select_file_source)
         self.backup_field.bind("<Double-Button-1>", self.select_file_backup)
+        self.pack()
 
-        self.redraw()
+    # def open_directory(self, e_dir):
+    #     """Select a directory."""
 
-    def open_directory(self, e_dir):
-        """Select a directory."""
+    #     if e_dir == self.e_dirs.SRC:
+    #         dir_var = self.source_dir_var
+    #     elif e_dir == self.e_dirs.BAK:
+    #         dir_var = self.backup_dir_var
 
-        if e_dir == self.e_dirs.SRC:
-            dir_var = self.source_dir_var
-        elif e_dir == self.e_dirs.BAK:
-            dir_var = self.backup_dir_var
-
-        dir_name = filedialog.askdirectory(
-            parent=self.master,
-            title="Open Directory...",
-            initialdir=dir_var.get(),
-        )
-        dir_name = os.path.normpath(dir_name)
-        if dir_name:
-            dir_var.set(dir_name)
-            self.finish_open()
+    #     dir_name = filedialog.askdirectory(
+    #         parent=self.master,
+    #         title="Open Directory...",
+    #         initialdir=dir_var.get(),
+    #     )
+    #     dir_name = os.path.normpath(dir_name)
+    #     if dir_name:
+    #         dir_var.set(dir_name)
+    #         self.finish_open()
 
     def finish_open(self):
         """Clean up after selecting new folder."""
-        self.manager.source_directory = self.source_dir_var.get()
+        self.manager.source_directory = self.source_panel.directory_var.get()
         self.manager.backup_directory = self.backup_dir_var.get()
         with open("last_dirs.log", "w", encoding="utf-8") as log:
-            log.write(self.source_dir_var.get() + "\n")
+            log.write(self.source_panel.directory_var.get() + "\n")
             log.write(self.backup_dir_var.get() + "\n")
         self.manager.report.items.clear()
         # self.show_tree("both")
@@ -269,7 +315,7 @@ class App:
         """Scan the source and backup directories and display results."""
         start = time.time()
         # self.manager.report = self.compare_directories().examine()
-        srcdir = self.source_dir_var.get()
+        srcdir = self.source_panel.directory_var.get()
         bakdir = self.backup_dir_var.get()
         self.manager.scan(srcdir, bakdir)
         self.redraw()
@@ -279,7 +325,7 @@ class App:
 
     def display_examined_results(self):
         """Display the results in the display lists"""
-        self.source_field.delete(0, tk.END)
+        self.source_panel.source_field.delete(0, tk.END)
         self.backup_field.delete(0, tk.END)
         if self.manager and self.manager.report:
             if "moved_files" in self.manager.report:
@@ -292,8 +338,8 @@ class App:
                     self.backup_field.itemconfig(tk.END, {"bg": "orange"})
             if "added_files" in self.manager.report:
                 for item in self.manager.report["added_files"]:
-                    self.source_field.insert(tk.END, item)
-                    self.source_field.itemconfig(tk.END, {"bg": "green"})
+                    self.source_panel.source_field.insert(tk.END, item)
+                    self.source_panel.source_field.itemconfig(tk.END, {"bg": "green"})
             if "removed_files" in self.manager.report:
                 for item in self.manager.report["removed_files"]:
                     self.backup_field.insert(tk.END, item)
