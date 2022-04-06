@@ -10,30 +10,34 @@ import logging
 import os
 import time
 import tkinter as tk
-from enum import Enum
 from tkinter import filedialog
 
 from .backup_manager import BackupManager
 
 SHALLOW = True
 
+
 class ConsoleFrame(tk.Frame):
+    """Class to hold console buttons"""
+
     def __init__(self, parent, buttons, *args, **kwargs):
         tk.Frame.__init__(self, parent, *args, **kwargs)
-        for b in buttons:
-            button = tk.Button(self, text=b[0], command=b[1])
-            button.pack(expand=False, fill=tk.X, side=tk.TOP, anchor="n")        
+        for button in buttons:
+            button_widget = tk.Button(self, text=button[0], command=button[1])
+            button_widget.pack(
+                expand=False, fill=tk.X, side=tk.TOP, anchor="n"
+            )
 
 
 class DirectoryFrame(tk.Frame):
+    """Class to hold an instance of a directory"""
+
     def __init__(self, parent, *args, **kwargs):
         tk.Frame.__init__(self, parent, *args, **kwargs)
         self.parent = parent
         self.directory_var = tk.StringVar()
-        
-        self.listing = tk.Listbox(
-            master=self, selectmode=tk.EXTENDED
-        )
+
+        self.listing = tk.Listbox(master=self, selectmode=tk.EXTENDED)
 
         open_folder_button = tk.Button(
             self,
@@ -51,7 +55,6 @@ class DirectoryFrame(tk.Frame):
         self.grid_rowconfigure(index=2, weight=1)
         self.grid_columnconfigure(index=0, weight=1)
 
-    
     def open_directory(self):
         """Select a directory."""
 
@@ -67,9 +70,13 @@ class DirectoryFrame(tk.Frame):
             dir_var.set(dir_name)
             self.master.finish_open()
 
+
 class App(tk.Frame):
     """App class is used to hold the backup app window and methods."""
-    def __init__(self, master, srcdir, bakdir, log_to_file=False, *args, **kwargs):
+
+    def __init__(
+        self, master, srcdir, bakdir, *args, log_to_file=False, **kwargs
+    ):
         tk.Frame.__init__(self, master, *args, **kwargs)
         self.manager = BackupManager(srcdir, bakdir, log_to_file)
         self.master = master
@@ -78,7 +85,13 @@ class App(tk.Frame):
 
         self.source_panel.directory_var.set(srcdir)
         self.backup_panel.directory_var.set(bakdir)
-        self.log((self.source_panel.directory_var.get(), self.backup_panel.directory_var.get()), True)
+        self.log(
+            (
+                self.source_panel.directory_var.get(),
+                self.backup_panel.directory_var.get(),
+            ),
+            True,
+        )
         self.redraw()
         # self.show_tree("both")
 
@@ -100,7 +113,7 @@ class App(tk.Frame):
         """
         if which == "source":
             folder = self.source_panel.directory_var.get()
-            display_pane = self.source_field
+            display_pane = self.source_panel.listing
         elif which == "backup":
             folder = self.backup_panel.directory_var.get()
             display_pane = self.backup_panel.listing
@@ -200,11 +213,15 @@ class App(tk.Frame):
         self.master.config(menu=filebar)
 
         self.source_panel = DirectoryFrame(self)
-        self.source_panel.listing.bind("<Double-Button-1>", self.select_file_source)
+        self.source_panel.listing.bind(
+            "<Double-Button-1>", self.select_file_source
+        )
 
         self.backup_panel = DirectoryFrame(self)
-        self.backup_panel.listing.bind("<Double-Button-1>", self.select_file_backup)
-        
+        self.backup_panel.listing.bind(
+            "<Double-Button-1>", self.select_file_backup
+        )
+
         buttons = (
             ("Scan", self.scan),
             ("Move in Backup", self.move_files),
@@ -214,10 +231,14 @@ class App(tk.Frame):
             ("Update in Backup", self.update_files),
         )
         self.console = ConsoleFrame(self, buttons)
-        
-        self.source_panel.pack(expand=True, fill=tk.BOTH, side=tk.LEFT, anchor="n")
+
+        self.source_panel.pack(
+            expand=True, fill=tk.BOTH, side=tk.LEFT, anchor="n"
+        )
         self.console.pack(expand=False, fill=tk.NONE, side=tk.LEFT, anchor="n")
-        self.backup_panel.pack(expand=True, fill=tk.BOTH, side=tk.LEFT, anchor="n")
+        self.backup_panel.pack(
+            expand=True, fill=tk.BOTH, side=tk.LEFT, anchor="n"
+        )
 
         self.pack(expand=True, fill=tk.BOTH, side=tk.LEFT)
 
@@ -249,16 +270,24 @@ class App(tk.Frame):
         if self.manager and self.manager.report:
             if "moved_files" in self.manager.report:
                 for item in self.manager.report["moved_files"]:
-                    self.backup_panel.listing.insert(tk.END, item[0] + "-->" + item[1])
-                    self.backup_panel.listing.itemconfig(tk.END, {"bg": "yellow"})
+                    self.backup_panel.listing.insert(
+                        tk.END, item[0] + "-->" + item[1]
+                    )
+                    self.backup_panel.listing.itemconfig(
+                        tk.END, {"bg": "yellow"}
+                    )
             if "mismatched_files" in self.manager.report:
                 for item in self.manager.report["mismatched_files"]:
                     self.backup_panel.listing.insert(tk.END, item)
-                    self.backup_panel.listing.itemconfig(tk.END, {"bg": "orange"})
+                    self.backup_panel.listing.itemconfig(
+                        tk.END, {"bg": "orange"}
+                    )
             if "added_files" in self.manager.report:
                 for item in self.manager.report["added_files"]:
                     self.source_panel.listing.insert(tk.END, item)
-                    self.source_panel.listing.itemconfig(tk.END, {"bg": "green"})
+                    self.source_panel.listing.itemconfig(
+                        tk.END, {"bg": "green"}
+                    )
             if "removed_files" in self.manager.report:
                 for item in self.manager.report["removed_files"]:
                     self.backup_panel.listing.insert(tk.END, item)
@@ -272,6 +301,7 @@ class App(tk.Frame):
 
 
 def main():
+    """Launch the backup app"""
     logging.basicConfig(level=logging.DEBUG)
     dirs = []
     try:
