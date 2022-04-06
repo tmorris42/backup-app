@@ -6,12 +6,13 @@ Compare the current state of a source folder with the current state of the
 backup folder.
 """
 
-from idlelib.tooltip import Hovertip
 import logging
 import os
 import time
 import tkinter as tk
 from tkinter import filedialog
+
+from idlelib.tooltip import Hovertip  # type: ignore
 
 from .backup_manager import BackupManager
 
@@ -61,6 +62,7 @@ class DirectoryFrame(tk.Frame):
 
     @property
     def directory(self):
+        """Directory variable to store text for tkinter directory Entry"""
         return self._directory_var.get()
 
     @directory.setter
