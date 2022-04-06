@@ -26,6 +26,7 @@ class BackupManager:
     def __init__(self, srcdir, bakdir, log_to_file=False):
         self.source_directory = srcdir
         self.backup_directory = bakdir
+        self.logger = logging.getLogger(f"{__name__}.{type(self).__name__}")
         if log_to_file:
             self.log_file = (
                 f'__logs/{datetime.now().strftime("%Y-%m-%d-%H-%M-%S")}.log'
@@ -160,13 +161,13 @@ class BackupManager:
             self.source_directory, self.backup_directory
         ).examine()
         runtime = time.time() - start
-        logging.info("runtime: %d seconds", runtime)
+        self.logger.info("runtime: %d seconds", runtime)
         self.log(self.report, True)
 
     def compare_directories(self, dira, dirb, recursing=False, shallow=True):
         """Compare source and backup directories."""
         if not dira or not dirb:
-            logging.error("Invalid comparison directories")
+            self.logger.error("Invalid comparison directories")
             return None
         simple_report = Report({}, source=dira, backup=dirb)
         # compare directories (This uses shallow comparison!!)
@@ -216,7 +217,7 @@ class BackupManager:
                 new_dira, new_dirb, recursing=True
             )
             if not recursing:
-                logging.info("Checking subfolder\n\n\t%s\n", new_dira)
+                self.logger.info("Checking subfolder: %s", new_dira)
 
             # add sub report to overall report
             for key in (

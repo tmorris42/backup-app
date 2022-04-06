@@ -92,6 +92,7 @@ class App(tk.Frame):
     ):
         tk.Frame.__init__(self, master, *args, **kwargs)
         self.manager = BackupManager(srcdir, bakdir, log_to_file)
+        self.logger = logging.getLogger(f"{__name__}.{type(self).__name__}")
         self.master = master
 
         self.make_window()
@@ -110,7 +111,7 @@ class App(tk.Frame):
 
     def redraw(self):
         """Redraw the GUI."""
-        # logging.info("Redrawing!")
+        # self.logger.info("Redrawing!")
         if self.manager and self.manager.report:
             self.display_examined_results()
         self.after(200, self.redraw)
@@ -136,7 +137,7 @@ class App(tk.Frame):
             return
 
         listing = os.listdir(folder)
-        logging.info("%s: %s", os.path.basename(folder), listing)
+        self.logger.info("%s: %s", os.path.basename(folder), listing)
 
         display_pane.delete(0, tk.END)
         i = 0
@@ -158,7 +159,7 @@ class App(tk.Frame):
             index = self.source_panel.listing.nearest(event.y)
         filename = self.source_panel.listing.get(index)
         failed = self.manager.copy_added_file(filename)
-        logging.error("The following files failed: %s", failed)
+        self.logger.error("The following files failed: %s", failed)
 
     def copy_selected(self):
         """Copy selected files in the changed files list to the backup folder.
@@ -183,12 +184,12 @@ class App(tk.Frame):
             deleted, delete it in the backup location.
             changed, copy it from the source location to the backup location.
         """
-        logging.debug(
+        self.logger.debug(
             "Selecting file in backup. event: %s, index: %s", event, index
         )
         if index is None:
             index = self.backup_panel.listing.nearest(event.y)
-            logging.debug("Found index: %s", index)
+            self.logger.debug("Found index: %s", index)
         filename = self.backup_panel.listing.get(index)
         moved_len = len(self.manager.report["moved_files"])
         mis_len = moved_len + len(self.manager.report["mismatched_files"])
@@ -203,7 +204,7 @@ class App(tk.Frame):
             )
         elif index < removed_len:
             failed = self.manager.delete_files([filename])
-        logging.error("The following files failed: %s", failed)
+        self.logger.error("The following files failed: %s", failed)
 
     def update_files(self):
         """Command function to call update_files_a_to_b."""
@@ -275,7 +276,7 @@ class App(tk.Frame):
         bakdir = self.backup_panel.directory
         self.manager.scan(srcdir, bakdir)
         runtime = time.time() - start
-        logging.info("runtime: %d seconds", runtime)
+        self.logger.info("runtime: %d seconds", runtime)
         self.log(self.manager.report, True)
 
     def display_examined_results(self):
@@ -309,15 +310,16 @@ class App(tk.Frame):
                     self.backup_panel.listing.itemconfig(tk.END, {"bg": "red"})
             if "errors" in self.manager.report:
                 for item in self.manager.report["errors"]:
-                    logging.error(
+                    self.logger.error(
                         "\nThese files had errors (check manually!):"
                     )
-                    logging.error(item)
+                    self.logger.error(item)
 
 
 def main():
     """Launch the backup app"""
     logging.basicConfig(level=logging.DEBUG)
+    logger = logging.getLogger(f"{__name__}.{main.__name__}")
     dirs = []
     try:
         with open("last_dirs.log", "r", encoding="utf-8") as file:
@@ -329,7 +331,8 @@ def main():
         backup_directory = ".\\__Demo Backup Location"
     starting_directory = os.path.abspath(starting_directory)
     backup_directory = os.path.abspath(backup_directory)
-    logging.debug("\n\t%s\n\n\t%s\n", starting_directory, backup_directory)
+    logger.debug("Starting Source Directory = %s", starting_directory)
+    logger.debug("Starting Backup Directory = %s", backup_directory)
 
     root = tk.Tk()
     app = App(root, starting_directory, backup_directory, log_to_file=True)
