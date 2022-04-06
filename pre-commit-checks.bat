@@ -7,6 +7,6 @@ python -m flake8 backup_app --ignore E231,E203
 python -m flake8 tests
 python -m pylint backup_app
 python -m pylint tests
-python -m pytest -q tests\tests.py
+python -m pytest -q tests
 python -m bandit -r -q backup_app
 ECHO ON
