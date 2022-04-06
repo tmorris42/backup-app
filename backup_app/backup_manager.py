@@ -45,7 +45,7 @@ class BackupManager:
                 print(msg)
         else:
             try:
-                with open(self.log_file, "a+") as out:
+                with open(self.log_file, "a+", encoding="utf-8") as out:
                     if pretty:
                         pprint(msg, stream=out)
                     else:
@@ -91,7 +91,7 @@ class BackupManager:
     def copy_added_file(self, filename):
         """Copy one file from added_files list to backup folder."""
         failed = self.copy_files_from_source_to_backup([filename])
-        if failed == []:
+        if not failed:
             self.report["added_files"].remove(filename)
         return failed
 
@@ -167,7 +167,7 @@ class BackupManager:
         """Compare source and backup directories."""
         if not dira or not dirb:
             logging.error("Invalid comparison directories")
-            return
+            return None
         simple_report = Report({}, source=dira, backup=dirb)
         # compare directories (This uses shallow comparison!!)
         dirs_cmp = filecmp.dircmp(dira, dirb)

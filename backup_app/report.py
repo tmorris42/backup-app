@@ -11,7 +11,9 @@ import os
 class Report:
     """Stores a directory scan report."""
 
-    def __init__(self, report_dict={}, source=None, backup=None):
+    def __init__(self, report_dict=None, source=None, backup=None):
+        if not report_dict:
+            report_dict = {}
         self.items = report_dict
         self.source = source
         self.backup = backup
@@ -65,12 +67,11 @@ class Report:
                     )
                     if len(temp_report.common) > length:
                         self.items["moved_files"].append((old_file, new_path))
-                        suspected_moved_files = (
+                        for new_find in (
                             n
                             for n in temp_report.left_only
                             if n in self.items["removed_files"]
-                        )
-                        for new_find in suspected_moved_files:
+                        ):
                             to_delete_rm_val.append(new_find)
                             self.items["moved_files"].append(
                                 (
@@ -91,5 +92,4 @@ class Report:
         self.items["removed_files"] = [
             x for x in self.items["removed_files"] if x not in to_delete_rm_val
         ]
-        # self.items['moved_files'] = moved
         return self

@@ -38,10 +38,10 @@ class App:
         self.source_field.after(200, self.redraw)
 
     def redraw(self):
+        """Redraw the GUI."""
         # logging.info("Redrawing!")
         if self.manager and self.manager.report:
             self.display_examined_results()
-        # self.source_field.after(200, self.redraw)
         self.backup_field.after(200, self.redraw)
 
     def log(self, msg, pretty=False):
@@ -65,7 +65,7 @@ class App:
             return
 
         listing = os.listdir(folder)
-        logging.info(f"{os.path.basename(folder)}: {listing}")
+        logging.info("%s: %s", os.path.basename(folder), listing)
 
         display_pane.delete(0, tk.END)
         i = 0
@@ -85,10 +85,9 @@ class App:
         """
         if index is None:
             index = self.source_field.nearest(event.y)
-        # selected = self.displayEntries[index]
         filename = self.source_field.get(index)
         failed = self.manager.copy_added_file(filename)
-        logging.error(f"The following files failed: {failed}")
+        logging.error("The following files failed: %s", failed)
 
     def copy_selected(self):
         """Copy selected files in the changed files list to the backup folder.
@@ -120,7 +119,6 @@ class App:
             index = self.backup_field.nearest(event.y)
             logging.debug("Found index: %s", index)
         filename = self.backup_field.get(index)
-        # Index order: moved -> mismatched -> removed
         moved_len = len(self.manager.report["moved_files"])
         mis_len = moved_len + len(self.manager.report["mismatched_files"])
         removed_len = mis_len + len(self.manager.report["removed_files"])
@@ -134,7 +132,7 @@ class App:
             )
         elif index < removed_len:
             failed = self.manager.delete_files([filename])
-        logging.error(f"The following files failed: {failed}")
+        logging.error("The following files failed: %s", failed)
 
     def update_files(self):
         """Command function to call update_files_a_to_b."""
@@ -263,7 +261,7 @@ class App:
         """Clean up after selecting new folder."""
         self.manager.source_directory = self.source_dir_var.get()
         self.manager.backup_directory = self.backup_dir_var.get()
-        with open("last_dirs.log", "w") as log:
+        with open("last_dirs.log", "w", encoding="utf-8") as log:
             log.write(self.source_dir_var.get() + "\n")
             log.write(self.backup_dir_var.get() + "\n")
         self.manager.report.items.clear()
@@ -314,7 +312,7 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
     DIRS = []
     try:
-        with open("last_dirs.log", "r") as file:
+        with open("last_dirs.log", "r", encoding="utf-8") as file:
             for line in file:
                 DIRS.append(line)
         STARTING_DIRECTORY, BACKUP_DIRECTORY = DIRS[0][0:-1], DIRS[1][0:-1]
