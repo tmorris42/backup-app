@@ -29,7 +29,7 @@ class TestCopyFileFromAToB(unittest.TestCase):
 
     def test_copy_file(self):
         """Test that a file is successfully copied."""
-        with open("test_src/new_file.txt", "w") as out:
+        with open("test_src/new_file.txt", "w", encoding="utf-8") as out:
             out.write("this is an added file")
         failed = copy_files_from_a_to_b(
             "test_src", "test_bak", ["new_file.txt"]
@@ -49,18 +49,18 @@ class TestCopyFileFromAToB(unittest.TestCase):
 
     def test_copy_existing_file(self):
         """Test that an existing file is not copied."""
-        with open("test_src/new_file.txt", "w") as out:
+        with open("test_src/new_file.txt", "w", encoding="utf-8") as out:
             out.write("this is an added file")
-        with open("test_bak/new_file.txt", "w") as out:
+        with open("test_bak/new_file.txt", "w", encoding="utf-8") as out:
             out.write("diff")
         failed = copy_files_from_a_to_b(
             "test_src", "test_bak", ["new_file.txt"]
         )
         src, bak = "", ""
-        with open("test_src/new_file.txt", "r") as filein:
+        with open("test_src/new_file.txt", "r", encoding="utf-8") as filein:
             for line in filein:
                 src += line
-        with open("test_bak/new_file.txt", "r") as filein:
+        with open("test_bak/new_file.txt", "r", encoding="utf-8") as filein:
             for line in filein:
                 bak += line
         self.assertEqual(failed, ["new_file.txt"])
@@ -68,18 +68,18 @@ class TestCopyFileFromAToB(unittest.TestCase):
 
     def test_copy_existing_file_overwriting(self):
         """Test that an existing file is copied with overwriting."""
-        with open("test_src/new_file.txt", "w") as out:
+        with open("test_src/new_file.txt", "w", encoding="utf-8") as out:
             out.write("this is an added file")
-        with open("test_bak/new_file.txt", "w") as out:
+        with open("test_bak/new_file.txt", "w", encoding="utf-8") as out:
             out.write("diff")
         failed = copy_files_from_a_to_b(
             "test_src", "test_bak", ["new_file.txt"], overwrite=True
         )
         src, bak = "", ""
-        with open("test_src/new_file.txt", "r") as filein:
+        with open("test_src/new_file.txt", "r", encoding="utf-8") as filein:
             for line in filein:
                 src += line
-        with open("test_bak/new_file.txt", "r") as filein:
+        with open("test_bak/new_file.txt", "r", encoding="utf-8") as filein:
             for line in filein:
                 bak += line
         self.assertEqual(failed, [])
@@ -87,9 +87,9 @@ class TestCopyFileFromAToB(unittest.TestCase):
 
     def test_copy_files(self):
         """Test that files are successfully copied."""
-        with open("test_src/new_file.txt", "w") as out:
+        with open("test_src/new_file.txt", "w", encoding="utf-8") as out:
             out.write("this is an added file")
-        with open("test_src/new_file2.txt", "w") as out:
+        with open("test_src/new_file2.txt", "w", encoding="utf-8") as out:
             out.write("this is an added file")
         copy_files_from_a_to_b(
             "test_src", "test_bak", ["new_file.txt", "new_file2.txt"]
@@ -102,9 +102,13 @@ class TestCopyFileFromAToB(unittest.TestCase):
     def test_copy_folder(self):
         """Test that a folder is successfully copied."""
         os.makedirs("test_src/subdir")
-        with open("test_src/subdir/new_file.txt", "w") as out:
+        with open(
+            "test_src/subdir/new_file.txt", "w", encoding="utf-8"
+        ) as out:
             out.write("this is an added file")
-        with open("test_src/subdir/new_file2.txt", "w") as out:
+        with open(
+            "test_src/subdir/new_file2.txt", "w", encoding="utf-8"
+        ) as out:
             out.write("this is an added file")
         failed = copy_files_from_a_to_b("test_src", "test_bak", ["subdir"])
         self.assertEqual(failed, [])
@@ -117,9 +121,13 @@ class TestCopyFileFromAToB(unittest.TestCase):
         """Test that an existing folder is not copied."""
         os.makedirs("test_src/subdir")
         os.makedirs("test_bak/subdir")
-        with open("test_src/subdir/new_file.txt", "w") as out:
+        with open(
+            "test_src/subdir/new_file.txt", "w", encoding="utf-8"
+        ) as out:
             out.write("this is an added file")
-        with open("test_src/subdir/new_file2.txt", "w") as out:
+        with open(
+            "test_src/subdir/new_file2.txt", "w", encoding="utf-8"
+        ) as out:
             out.write("this is an added file")
         failed = copy_files_from_a_to_b("test_src", "test_bak", ["subdir"])
         self.assertEqual(failed, ["subdir"])
@@ -143,7 +151,7 @@ class TestDeleteFileFromB(unittest.TestCase):
 
     def test_delete_file(self):
         """Test that a file is deleted."""
-        with open("test_bak/new_file.txt", "w") as out:
+        with open("test_bak/new_file.txt", "w", encoding="utf-8") as out:
             out.write("diff")
         self.assertTrue(os.path.exists("test_bak/new_file.txt"))
         failed = fs.delete_files_from_b("test_bak", ["new_file.txt"])
@@ -171,7 +179,7 @@ class TestMoveFilesInB(unittest.TestCase):
 
     def test_move_file(self):
         """Test that a file is moved with no failures."""
-        with open("test_bak/new_file.txt", "w") as out:
+        with open("test_bak/new_file.txt", "w", encoding="utf-8") as out:
             out.write("diff")
         src = os.path.abspath("test_bak/new_file.txt")
         bak = os.path.abspath("test_bak/subdir/new_file.txt")
@@ -182,9 +190,9 @@ class TestMoveFilesInB(unittest.TestCase):
 
     def test_move_files(self):
         """Test that multiple files are moved with no failures."""
-        with open("test_bak/new_file.txt", "w") as out:
+        with open("test_bak/new_file.txt", "w", encoding="utf-8") as out:
             out.write("diff")
-        with open("test_bak/new_file2.txt", "w") as out:
+        with open("test_bak/new_file2.txt", "w", encoding="utf-8") as out:
             out.write("diff")
         src = os.path.abspath("test_bak/new_file.txt")
         bak = os.path.abspath("test_bak/subdir/new_file.txt")
@@ -200,9 +208,11 @@ class TestMoveFilesInB(unittest.TestCase):
     def test_move_file_overwrite(self):
         """Test that a file moved onto existing file won't move
         and will return a failure."""
-        with open("test_bak/new_file.txt", "w") as out:
+        with open("test_bak/new_file.txt", "w", encoding="utf-8") as out:
             out.write("diff")
-        with open("test_bak/subdir/new_file.txt", "w") as out:
+        with open(
+            "test_bak/subdir/new_file.txt", "w", encoding="utf-8"
+        ) as out:
             out.write("blah")
         src = os.path.abspath("test_bak/new_file.txt")
         bak = os.path.abspath("test_bak/subdir/new_file.txt")
@@ -227,16 +237,16 @@ class TestUpdateFilesAToB(unittest.TestCase):
 
     def test_update_file(self):
         """Test that an existing file is copied with overwriting."""
-        with open("test_src/new_file.txt", "w") as out:
+        with open("test_src/new_file.txt", "w", encoding="utf-8") as out:
             out.write("this is an added file")
-        with open("test_bak/new_file.txt", "w") as out:
+        with open("test_bak/new_file.txt", "w", encoding="utf-8") as out:
             out.write("diff")
         failed = update_files_a_to_b("test_src", "test_bak", ["new_file.txt"])
         src, bak = "", ""
-        with open("test_src/new_file.txt", "r") as filein:
+        with open("test_src/new_file.txt", "r", encoding="utf-8") as filein:
             for line in filein:
                 src += line
-        with open("test_bak/new_file.txt", "r") as filein:
+        with open("test_bak/new_file.txt", "r", encoding="utf-8") as filein:
             for line in filein:
                 bak += line
         self.assertEqual(failed, [])
@@ -264,7 +274,7 @@ class TestFileSystemFunctions(unittest.TestCase):
         """
         Test that a file copied to the backup folder is now valid path.
         """
-        with open("test_src/new_file.txt", "w") as out:
+        with open("test_src/new_file.txt", "w", encoding="utf-8") as out:
             out.write("this is an added file")
         self.app.scan()
         self.app.copy_all_new_files()
@@ -275,11 +285,11 @@ class TestFileSystemFunctions(unittest.TestCase):
         """
         Test that files copied to the backup folder are now valid paths.
         """
-        with open("test_src/new_file.txt", "w") as out:
+        with open("test_src/new_file.txt", "w", encoding="utf-8") as out:
             out.write("this is an added file")
-        with open("test_src/new_file2.txt", "w") as out:
+        with open("test_src/new_file2.txt", "w", encoding="utf-8") as out:
             out.write("this is an addedagd file")
-        with open("test_src/new_file3.txt", "w") as out:
+        with open("test_src/new_file3.txt", "w", encoding="utf-8") as out:
             out.write("this is an added fidgale")
         self.app.scan()
         self.app.copy_all_new_files()
@@ -295,9 +305,9 @@ class TestFileSystemFunctions(unittest.TestCase):
         Test that a file moved in the backup folder is no longer valid path
         at the original point, but is valid at the new location.
         """
-        with open("test_src/new_file.txt", "w") as out:
+        with open("test_src/new_file.txt", "w", encoding="utf-8") as out:
             out.write("this is an added file")
-        with open("test_bak/new_file.txt", "w") as out:
+        with open("test_bak/new_file.txt", "w", encoding="utf-8") as out:
             out.write("this is an added file")
         shutil.move("test_src/new_file.txt", "test_src/subdir/new_file.txt")
         self.app.scan()
@@ -311,17 +321,17 @@ class TestFileSystemFunctions(unittest.TestCase):
         Test that files moved in the backup folder are no longer valid paths
         at the original point, but are valid at the new location.
         """
-        with open("test_src/new_file.txt", "w") as out:
+        with open("test_src/new_file.txt", "w", encoding="utf-8") as out:
             out.write("this is an added file")
-        with open("test_src/new_file2.txt", "w") as out:
+        with open("test_src/new_file2.txt", "w", encoding="utf-8") as out:
             out.write("this is an addedagd file")
-        with open("test_src/new_file3.txt", "w") as out:
+        with open("test_src/new_file3.txt", "w", encoding="utf-8") as out:
             out.write("this is an added fidgale")
-        with open("test_bak/new_file.txt", "w") as out:
+        with open("test_bak/new_file.txt", "w", encoding="utf-8") as out:
             out.write("this is an added file")
-        with open("test_bak/new_file2.txt", "w") as out:
+        with open("test_bak/new_file2.txt", "w", encoding="utf-8") as out:
             out.write("this is an addedagd file")
-        with open("test_bak/new_file3.txt", "w") as out:
+        with open("test_bak/new_file3.txt", "w", encoding="utf-8") as out:
             out.write("this is an added fidgale")
         shutil.move("test_src/new_file.txt", "test_src/subdir/new_file.txt")
         shutil.move("test_src/new_file2.txt", "test_src/subdir/new_file2.txt")
@@ -342,7 +352,7 @@ class TestFileSystemFunctions(unittest.TestCase):
         """
         Test that a file removed in the backup folder is no longer valid path.
         """
-        with open("test_bak/new_file.txt", "w") as out:
+        with open("test_bak/new_file.txt", "w", encoding="utf-8") as out:
             out.write("this is an added file")
         self.app.scan()
         self.app.delete_files()
@@ -352,11 +362,11 @@ class TestFileSystemFunctions(unittest.TestCase):
         """
         Test that files removed in the backup folder are no longer valid paths.
         """
-        with open("test_bak/new_file.txt", "w") as out:
+        with open("test_bak/new_file.txt", "w", encoding="utf-8") as out:
             out.write("this is an added file")
-        with open("test_bak/new_file2.txt", "w") as out:
+        with open("test_bak/new_file2.txt", "w", encoding="utf-8") as out:
             out.write("this is an addedagd file")
-        with open("test_bak/new_file3.txt", "w") as out:
+        with open("test_bak/new_file3.txt", "w", encoding="utf-8") as out:
             out.write("this is an added fidgale")
         self.app.scan()
         self.app.delete_files()
@@ -387,7 +397,7 @@ class TestCopyCreatedFiles(unittest.TestCase):
         Test that a file selected in the source folder list are removed
         from the display and the report.
         """
-        with open("test_src/new_file.txt", "w") as out:
+        with open("test_src/new_file.txt", "w", encoding="utf-8") as out:
             out.write("this is an added file")
         self.app.scan()
         self.assertEqual(
@@ -403,11 +413,11 @@ class TestCopyCreatedFiles(unittest.TestCase):
         Test that files selected in the source folder list are removed
         from the display and the report.
         """
-        with open("test_src/new_file.txt", "w") as out:
+        with open("test_src/new_file.txt", "w", encoding="utf-8") as out:
             out.write("this is an added file")
-        with open("test_src/new_file2.txt", "w") as out:
+        with open("test_src/new_file2.txt", "w", encoding="utf-8") as out:
             out.write("this is another added file")
-        with open("test_src/new_file4.txt", "w") as out:
+        with open("test_src/new_file4.txt", "w", encoding="utf-8") as out:
             out.write("why not three of them")
         self.app.scan()
         self.app.source_field.selection_set(0, 1)
@@ -425,9 +435,9 @@ class TestCopyCreatedFiles(unittest.TestCase):
         Test that a moved file selected in the backup folder list
         is removed from the display and the report.
         """
-        with open("test_src/new_file.txt", "w") as out:
+        with open("test_src/new_file.txt", "w", encoding="utf-8") as out:
             out.write("this is an added file")
-        with open("test_bak/new_file.txt", "w") as out:
+        with open("test_bak/new_file.txt", "w", encoding="utf-8") as out:
             out.write("this is an added file")
         shutil.move("test_src/new_file.txt", "test_src/subdir/new_file.txt")
         self.app.scan()
@@ -441,9 +451,9 @@ class TestCopyCreatedFiles(unittest.TestCase):
         Test that a modified file selected in the backup folder list
         is removed from the display and the report.
         """
-        with open("test_src/new_file.txt", "w") as out:
+        with open("test_src/new_file.txt", "w", encoding="utf-8") as out:
             out.write("this is an added file")
-        with open("test_bak/new_file.txt", "w") as out:
+        with open("test_bak/new_file.txt", "w", encoding="utf-8") as out:
             out.write("this is a modified file")
         self.app.scan()
         self.app.select_file_backup(index=0)
@@ -456,7 +466,7 @@ class TestCopyCreatedFiles(unittest.TestCase):
         Test that a removed file selected in the backup folder list
         is removed from the display and the report.
         """
-        with open("test_bak/new_file.txt", "w") as out:
+        with open("test_bak/new_file.txt", "w", encoding="utf-8") as out:
             out.write("this is a removed file")
         self.app.scan()
         self.app.select_file_backup(index=0)
@@ -469,11 +479,11 @@ class TestCopyCreatedFiles(unittest.TestCase):
         Test that new files are removed from the display and the report
         when the copy all files button is pressed.
         """
-        with open("test_src/new_file.txt", "w") as out:
+        with open("test_src/new_file.txt", "w", encoding="utf-8") as out:
             out.write("this is an added file")
-        with open("test_src/new_file2.txt", "w") as out:
+        with open("test_src/new_file2.txt", "w", encoding="utf-8") as out:
             out.write("this is another added file")
-        with open("test_src/new_file4.txt", "w") as out:
+        with open("test_src/new_file4.txt", "w", encoding="utf-8") as out:
             out.write("why not three of them")
         self.app.scan()
         self.assertEqual(
@@ -499,11 +509,13 @@ class TestScan(unittest.TestCase):
         shutil.rmtree("test_bak/", ignore_errors=True)
         for fld in ["test_src", "test_bak"]:
             os.makedirs(f"{fld}/subdir/granddir")
-            with open(f"{fld}/file1.txt", "w") as out:
+            with open(f"{fld}/file1.txt", "w", encoding="utf-8") as out:
                 out.write("this is a file")
-            with open(f"{fld}/subdir/file2.txt", "w") as out:
+            with open(f"{fld}/subdir/file2.txt", "w", encoding="utf-8") as out:
                 out.write("this is a second file")
-            with open(f"{fld}/subdir/granddir/file3.txt", "w") as out:
+            with open(
+                f"{fld}/subdir/granddir/file3.txt", "w", encoding="utf-8"
+            ) as out:
                 out.write("this is a third file")
         self.root = tk.Tk()
         self.app = ba.App(self.root, "test_src", "test_bak")
@@ -535,7 +547,7 @@ class TestScan(unittest.TestCase):
         Test that a created file will be put under 'added_files' in the
         report.
         """
-        with open("test_src/new_file.txt", "w") as out:
+        with open("test_src/new_file.txt", "w", encoding="utf-8") as out:
             out.write("this is an added file")
         self.app.scan()
         self.assertEqual(
@@ -555,11 +567,11 @@ class TestScan(unittest.TestCase):
         Test that multiple created files will all be put under 'added_files'
         in the report.
         """
-        with open("test_src/new_file.txt", "w") as out:
+        with open("test_src/new_file.txt", "w", encoding="utf-8") as out:
             out.write("this is an added file")
-        with open("test_src/new_file2.txt", "w") as out:
+        with open("test_src/new_file2.txt", "w", encoding="utf-8") as out:
             out.write("this is another added file")
-        with open("test_src/new_file4.txt", "w") as out:
+        with open("test_src/new_file4.txt", "w", encoding="utf-8") as out:
             out.write("why not three of them")
         self.app.scan()
         self.assertEqual(
@@ -572,7 +584,9 @@ class TestScan(unittest.TestCase):
         Test that a created file in a subdirectory will be put under
         'added_files' in the report.
         """
-        with open("test_src/subdir/new_file2.txt", "w") as out:
+        with open(
+            "test_src/subdir/new_file2.txt", "w", encoding="utf-8"
+        ) as out:
             out.write("this is another added file")
         self.app.scan()
         self.assertEqual(
@@ -592,7 +606,7 @@ class TestScan(unittest.TestCase):
         Test that a modified file will be put under 'mismatched_files' in the
         report.
         """
-        with open("test_src/subdir/file2.txt", "w+") as out:
+        with open("test_src/subdir/file2.txt", "w+", encoding="utf-8") as out:
             out.write("this file changed")
         self.app.scan()
         self.assertEqual(
