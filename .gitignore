@@ -1,7 +1,21 @@
+# Environment
 env/
+.vscode
+
+# Demo files
 Demo*
-__*
+__demo*
+__old
+
+# Log files
+__logs
 *.log
+
+# Configuration files
 .pylintrc
 
+# Cache
+*.pyc
 .mypy_cache
+__pycache__
+.pytest_cache
