@@ -6,11 +6,11 @@ Compare the current state of a source folder with the current state of the
 backup folder.
 """
 
-from enum import Enum
 import logging
 import os
 import time
 import tkinter as tk
+from enum import Enum
 from tkinter import filedialog
 
 from .backup_manager import BackupManager
