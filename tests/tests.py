@@ -8,6 +8,7 @@ import tkinter as tk
 import unittest
 
 import backup_app.backup_app as ba
+import backup_app.filesystem as fs
 from backup_app.filesystem import copy_files_from_a_to_b, update_files_a_to_b
 
 # from unittest.mock import Mock, MagicMock
@@ -145,13 +146,13 @@ class TestDeleteFileFromB(unittest.TestCase):
         with open("test_bak/new_file.txt", "w") as out:
             out.write("diff")
         self.assertTrue(os.path.exists("test_bak/new_file.txt"))
-        failed = ba.delete_files_from_b("test_bak", ["new_file.txt"])
+        failed = fs.delete_files_from_b("test_bak", ["new_file.txt"])
         self.assertFalse(os.path.exists("test_bak/new_file.txt"))
         self.assertEqual(failed, [])
 
     def test_delete_nonexistant_file(self):
         """Test that a nonexistant file returns as failure."""
-        failed = ba.delete_files_from_b("test_bak", ["new_file.txt"])
+        failed = fs.delete_files_from_b("test_bak", ["new_file.txt"])
         self.assertEqual(failed, ["new_file.txt"])
         self.assertFalse(os.path.exists("test_bak/new_file.txt"))
 
@@ -174,7 +175,7 @@ class TestMoveFilesInB(unittest.TestCase):
             out.write("diff")
         src = os.path.abspath("test_bak/new_file.txt")
         bak = os.path.abspath("test_bak/subdir/new_file.txt")
-        failed = ba.move_files_in_b([(src, bak)])
+        failed = fs.move_files_in_b([(src, bak)])
         self.assertTrue(os.path.exists("test_bak/subdir/new_file.txt"))
         self.assertFalse(os.path.exists("test_bak/new_file.txt"))
         self.assertEqual(failed, [])
@@ -189,7 +190,7 @@ class TestMoveFilesInB(unittest.TestCase):
         bak = os.path.abspath("test_bak/subdir/new_file.txt")
         src2 = os.path.abspath("test_bak/new_file2.txt")
         bak2 = os.path.abspath("test_bak/subdir/new_file2.txt")
-        failed = ba.move_files_in_b([(src, bak), (src2, bak2)])
+        failed = fs.move_files_in_b([(src, bak), (src2, bak2)])
         self.assertTrue(os.path.exists("test_bak/subdir/new_file.txt"))
         self.assertFalse(os.path.exists("test_bak/new_file.txt"))
         self.assertTrue(os.path.exists("test_bak/subdir/new_file2.txt"))
@@ -205,7 +206,7 @@ class TestMoveFilesInB(unittest.TestCase):
             out.write("blah")
         src = os.path.abspath("test_bak/new_file.txt")
         bak = os.path.abspath("test_bak/subdir/new_file.txt")
-        failed = ba.move_files_in_b([(src, bak)])
+        failed = fs.move_files_in_b([(src, bak)])
         self.assertTrue(os.path.exists("test_bak/subdir/new_file.txt"))
         self.assertTrue(os.path.exists("test_bak/new_file.txt"))
         self.assertEqual(failed, [(src, bak)])
@@ -373,7 +374,7 @@ class TestCopyCreatedFiles(unittest.TestCase):
         for fld in ["test_src", "test_bak"]:
             os.makedirs(f"{fld}/subdir/granddir")
         self.root = tk.Tk()
-        self.app = ba.App(self.root, "test_src", "test_bak")
+        self.app = ba.App(self.root, "test_src", "test_bak", log_to_file=False)
 
     def tearDown(self):
         shutil.rmtree("test_src/", ignore_errors=True)
@@ -646,21 +647,24 @@ class TestScan(unittest.TestCase):
             ],
         )
         self.assertEqual(
-            self.app.manager.report.items["removed_files"], [],
+            self.app.manager.report.items["removed_files"],
+            [],
         )
         self.assertEqual(
             self.app.manager.report.items["matched_files"],
             ["subdir\\file2.txt", "subdir\\granddir\\file3.txt"],
         )
         self.assertEqual(
-            self.app.manager.report.items["mismatched_files"], [],
+            self.app.manager.report.items["mismatched_files"],
+            [],
         )
         self.assertEqual(
             self.app.manager.report.items["moved_files"],
             [("test_bak\\file1.txt", "test_bak\\subdir\\file1.txt")],
         )
         self.assertEqual(
-            self.app.manager.report.items["errors"], [],
+            self.app.manager.report.items["errors"],
+            [],
         )
 
     def test_renamed_folder(self):
