@@ -1,4 +1,4 @@
-"""This script contains functions to move, copy, and delete files from the filesystem"""
+"""This script contains functions to move, copy, and delete files"""
 
 import logging
 import os
