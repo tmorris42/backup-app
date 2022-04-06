@@ -6,6 +6,7 @@ Compare the current state of a source folder with the current state of the
 backup folder.
 """
 
+from idlelib.tooltip import Hovertip
 import logging
 import os
 import time
@@ -41,19 +42,21 @@ class DirectoryFrame(tk.Frame):
 
         open_folder_button = tk.Button(
             self,
-            text="Open Folder",
+            text="\U0001F4C2",
             command=self.open_directory,
         )
+        Hovertip(open_folder_button, "Open folder")
+
         directory_label = tk.Entry(
             self, textvariable=self.directory_var, state="readonly"
         )
 
-        open_folder_button.grid(row=0, column=0, sticky="new")
-        directory_label.grid(row=1, column=0, sticky="new")
-        self.listing.grid(row=2, column=0, sticky="nsew")
+        open_folder_button.grid(row=0, column=0, sticky="nw")
+        directory_label.grid(row=0, column=1, sticky="nsew")
+        self.listing.grid(row=1, column=0, columnspan=2, sticky="nsew")
 
-        self.grid_rowconfigure(index=2, weight=1)
-        self.grid_columnconfigure(index=0, weight=1)
+        self.grid_rowconfigure(index=1, weight=1)
+        self.grid_columnconfigure(index=1, weight=1)
 
     def open_directory(self):
         """Select a directory."""
@@ -62,7 +65,7 @@ class DirectoryFrame(tk.Frame):
 
         dir_name = filedialog.askdirectory(
             parent=self.master,
-            title="Open Directory...",
+            title="Open Folder...",
             initialdir=dir_var.get(),
         )
         dir_name = os.path.normpath(dir_name)
