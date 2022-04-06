@@ -17,32 +17,30 @@ from .backup_manager import BackupManager
 
 SHALLOW = True
 
-class SourcePanel(tk.Frame):
+class DirectoryFrame(tk.Frame):
     def __init__(self, parent, *args, **kwargs):
         tk.Frame.__init__(self, parent, *args, **kwargs)
         self.parent = parent
         self.directory_var = tk.StringVar()
         
-        self.source_field = tk.Listbox(
+        self.listing = tk.Listbox(
             master=self, width=60, selectmode=tk.EXTENDED
         )
 
-        source_button = tk.Button(
+        open_folder_button = tk.Button(
             self,
             text="Open Source Folder",
             command=self.open_directory,
         )
-        source_dir_field = tk.Entry(
+        directory_label = tk.Entry(
             self, textvariable=self.directory_var, state="readonly"
         )
-        # source_button.grid(row=0, column=0, sticky="nsew")
-        # source_dir_field.grid(row=0, column=1, sticky="nsew")
 
-        source_dir_field.pack(expand=True, fill=tk.BOTH, side=tk.TOP)
-        source_button.pack(expand=True, fill=tk.BOTH, side=tk.TOP)
-        self.source_field.pack(expand=True, fill=tk.BOTH, side=tk.TOP)
+        open_folder_button.pack(expand=True, fill=tk.BOTH, side=tk.TOP)
+        directory_label.pack(expand=True, fill=tk.BOTH, side=tk.TOP)
+        self.listing.pack(expand=True, fill=tk.BOTH, side=tk.TOP)
 
-        self.source_field.bind("<Double-Button-1>", self.parent.select_file_source)
+        self.listing.bind("<Double-Button-1>", self.parent.select_file_source)
     
     def open_directory(self):
         """Select a directory."""
@@ -77,7 +75,7 @@ class App(tk.Frame):
         self.redraw()
         # self.show_tree("both")
         self.log((self.source_panel.directory_var.get(), self.backup_dir_var.get()), True)
-        self.source_panel.source_field.after(200, self.redraw)
+        self.source_panel.listing.after(200, self.redraw)
 
     def redraw(self):
         """Redraw the GUI."""
@@ -126,8 +124,8 @@ class App(tk.Frame):
             created, copy it from the source location to the backup location.
         """
         if index is None:
-            index = self.source_panel.source_field.nearest(event.y)
-        filename = self.source_panel.source_field.get(index)
+            index = self.source_panel.listing.nearest(event.y)
+        filename = self.source_panel.listing.get(index)
         failed = self.manager.copy_added_file(filename)
         logging.error("The following files failed: %s", failed)
 
@@ -137,7 +135,7 @@ class App(tk.Frame):
         Copy each file that has been selected in the source folder list to
         the backup folder list.
         """
-        items = list(map(int, self.source_panel.source_field.curselection()))
+        items = list(map(int, self.source_panel.listing.curselection()))
         items.sort(reverse=True)
         for item in items:
             self.select_file_source(index=item)
@@ -195,12 +193,9 @@ class App(tk.Frame):
         filemenu = tk.Menu(filebar, tearoff=0)
         filebar.add_cascade(label="File", menu=filemenu)
 
-        self.source_panel = SourcePanel(self)
-        self.source_panel.grid(row=1, column=0, rowspan=7, columnspan=2, sticky="nsew")
+        self.source_panel = DirectoryFrame(self)
+        self.source_panel.grid(row=0, column=0, rowspan=7, columnspan=2, sticky="nsew")
 
-        # self.source_field = tk.Listbox(
-        #     self.master, width=60, selectmode=tk.EXTENDED
-        # )
         self.backup_field = tk.Listbox(self, width=60, selectmode=tk.EXTENDED)
 
         button_width = 20  # button width
@@ -325,7 +320,7 @@ class App(tk.Frame):
 
     def display_examined_results(self):
         """Display the results in the display lists"""
-        self.source_panel.source_field.delete(0, tk.END)
+        self.source_panel.listing.delete(0, tk.END)
         self.backup_field.delete(0, tk.END)
         if self.manager and self.manager.report:
             if "moved_files" in self.manager.report:
@@ -338,8 +333,8 @@ class App(tk.Frame):
                     self.backup_field.itemconfig(tk.END, {"bg": "orange"})
             if "added_files" in self.manager.report:
                 for item in self.manager.report["added_files"]:
-                    self.source_panel.source_field.insert(tk.END, item)
-                    self.source_panel.source_field.itemconfig(tk.END, {"bg": "green"})
+                    self.source_panel.listing.insert(tk.END, item)
+                    self.source_panel.listing.itemconfig(tk.END, {"bg": "green"})
             if "removed_files" in self.manager.report:
                 for item in self.manager.report["removed_files"]:
                     self.backup_field.insert(tk.END, item)
