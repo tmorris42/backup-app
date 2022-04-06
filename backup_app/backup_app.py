@@ -255,6 +255,8 @@ class App(tk.Frame):
 
         self.pack(expand=True, fill=tk.BOTH, side=tk.LEFT)
 
+        self.master.bind("<Escape>", exit)
+
     def finish_open(self):
         """Clean up after selecting new folder."""
         self.manager.source_directory = self.source_panel.directory
