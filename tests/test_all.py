@@ -400,12 +400,13 @@ class TestCopyCreatedFiles(unittest.TestCase):
         with open("test_src/new_file.txt", "w", encoding="utf-8") as out:
             out.write("this is an added file")
         self.app.scan()
+        self.app.redraw()
         self.assertEqual(
-            self.app.source_field.get(0, tk.END), ("new_file.txt",)
+            self.app.source_panel.listing.get(0, tk.END), ("new_file.txt",)
         )
         self.app.select_file_source(index=0)
         self.app.redraw()
-        self.assertEqual(self.app.source_field.get(0, tk.END), ())
+        self.assertEqual(self.app.source_panel.listing.get(0, tk.END), ())
         self.assertEqual(self.app.manager.report["added_files"], [])
 
     def test_created_file_multiple_selected(self):
@@ -420,11 +421,12 @@ class TestCopyCreatedFiles(unittest.TestCase):
         with open("test_src/new_file4.txt", "w", encoding="utf-8") as out:
             out.write("why not three of them")
         self.app.scan()
-        self.app.source_field.selection_set(0, 1)
+        self.app.redraw()
+        self.app.source_panel.listing.selection_set(0, 1)
         self.app.copy_selected()
         self.app.redraw()
         self.assertEqual(
-            self.app.source_field.get(0, tk.END), ("new_file4.txt",)
+            self.app.source_panel.listing.get(0, tk.END), ("new_file4.txt",)
         )
         self.assertEqual(
             self.app.manager.report["added_files"], ["new_file4.txt"]
@@ -443,7 +445,7 @@ class TestCopyCreatedFiles(unittest.TestCase):
         self.app.scan()
         self.app.select_file_backup(index=0)
         self.app.redraw()
-        self.assertEqual(self.app.backup_field.get(0, tk.END), ())
+        self.assertEqual(self.app.backup_panel.listing.get(0, tk.END), ())
         self.assertEqual(self.app.manager.report["moved_files"], [])
 
     def test_modified_file_selected(self):
@@ -456,9 +458,10 @@ class TestCopyCreatedFiles(unittest.TestCase):
         with open("test_bak/new_file.txt", "w", encoding="utf-8") as out:
             out.write("this is a modified file")
         self.app.scan()
+        self.app.redraw()
         self.app.select_file_backup(index=0)
         self.app.redraw()
-        self.assertEqual(self.app.backup_field.get(0, tk.END), ())
+        self.assertEqual(self.app.backup_panel.listing.get(0, tk.END), ())
         self.assertEqual(self.app.manager.report["mismatched_files"], [])
 
     def test_removed_file_selected(self):
@@ -469,9 +472,10 @@ class TestCopyCreatedFiles(unittest.TestCase):
         with open("test_bak/new_file.txt", "w", encoding="utf-8") as out:
             out.write("this is a removed file")
         self.app.scan()
+        self.app.redraw()
         self.app.select_file_backup(index=0)
         self.app.redraw()
-        self.assertEqual(self.app.backup_field.get(0, tk.END), ())
+        self.assertEqual(self.app.backup_panel.listing.get(0, tk.END), ())
         self.assertEqual(self.app.manager.report["removed_files"], [])
 
     def test_copy_to_b(self):
@@ -492,13 +496,13 @@ class TestCopyCreatedFiles(unittest.TestCase):
         )
         self.app.redraw()
         self.assertEqual(
-            self.app.source_field.get(0, tk.END),
+            self.app.source_panel.listing.get(0, tk.END),
             ("new_file.txt", "new_file2.txt", "new_file4.txt"),
         )
         self.app.copy_all_new_files()
         self.app.redraw()
         self.assertEqual(self.app.manager.report["added_files"], [])
-        self.assertEqual(self.app.source_field.get(0, tk.END), ())
+        self.assertEqual(self.app.source_panel.listing.get(0, tk.END), ())
 
 
 class TestScan(unittest.TestCase):
