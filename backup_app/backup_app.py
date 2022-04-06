@@ -308,21 +308,26 @@ class App:
                     logging.error(item)
 
 
-if __name__ == "__main__":
+def main():
     logging.basicConfig(level=logging.DEBUG)
-    DIRS = []
+    dirs = []
     try:
         with open("last_dirs.log", "r", encoding="utf-8") as file:
             for line in file:
-                DIRS.append(line)
-        STARTING_DIRECTORY, BACKUP_DIRECTORY = DIRS[0][0:-1], DIRS[1][0:-1]
+                dirs.append(line)
+        starting_directory, backup_directory = dirs[0][0:-1], dirs[1][0:-1]
     except (FileNotFoundError, IndexError):
-        STARTING_DIRECTORY = ".\\__Demo Source Location"
-        BACKUP_DIRECTORY = ".\\__Demo Backup Location"
-    STARTING_DIRECTORY = os.path.abspath(STARTING_DIRECTORY)
-    BACKUP_DIRECTORY = os.path.abspath(BACKUP_DIRECTORY)
-    logging.debug("\n\t%s\n\n\t%s\n", STARTING_DIRECTORY, BACKUP_DIRECTORY)
+        starting_directory = ".\\__Demo Source Location"
+        backup_directory = ".\\__Demo Backup Location"
+    starting_directory = os.path.abspath(starting_directory)
+    backup_directory = os.path.abspath(backup_directory)
+    logging.debug("\n\t%s\n\n\t%s\n", starting_directory, backup_directory)
 
-    ROOT = tk.Tk()
-    APP = App(ROOT, STARTING_DIRECTORY, BACKUP_DIRECTORY, log_to_file=True)
-    ROOT.mainloop()
+    root = tk.Tk()
+    app = App(root, starting_directory, backup_directory, log_to_file=True)
+    root.mainloop()
+    del app
+
+
+if __name__ == "__main__":
+    main()
