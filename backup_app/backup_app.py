@@ -14,12 +14,11 @@ from enum import Enum
 from tkinter import filedialog
 
 from .backup_manager import BackupManager
-from .filesystem import delete_files_from_b, move_files_in_b
-from .report import Report
 
 SHALLOW = True
 
-E_DIRS = Enum('Directory', 'SRC BAK')
+E_DIRS = Enum("Directory", "SRC BAK")
+
 
 class App:
     """App class is used to hold the backup app window and methods."""
@@ -44,7 +43,6 @@ class App:
             self.display_examined_results()
         # self.source_field.after(200, self.redraw)
         self.backup_field.after(200, self.redraw)
-
 
     def log(self, msg, pretty=False):
         """Log messages to the session log file."""
@@ -73,9 +71,9 @@ class App:
         i = 0
         for filename in listing:
             if os.path.isdir(os.path.join(folder, filename)):
-                display_name = u'\U0001F5BF' + f' {os.path.basename(filename)}'
+                display_name = "\U0001F5BF" + f" {os.path.basename(filename)}"
             else:
-                display_name = f' {os.path.basename(filename)}'
+                display_name = f" {os.path.basename(filename)}"
             display_pane.insert(i, display_name)
             i += 1
 
@@ -90,6 +88,7 @@ class App:
         # selected = self.displayEntries[index]
         filename = self.source_field.get(index)
         failed = self.manager.copy_added_file(filename)
+        logging.error(f"The following files failed: {failed}")
 
     def copy_selected(self):
         """Copy selected files in the changed files list to the backup folder.
@@ -305,7 +304,9 @@ class App:
                     self.backup_field.itemconfig(tk.END, {"bg": "red"})
             if "errors" in self.manager.report:
                 for item in self.manager.report["errors"]:
-                    logging.error("\nThese files had errors (check manually!):")
+                    logging.error(
+                        "\nThese files had errors (check manually!):"
+                    )
                     logging.error(item)
 
 

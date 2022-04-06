@@ -11,8 +11,12 @@ import time
 from datetime import datetime
 from pprint import pprint
 
-from .filesystem import (copy_files_from_a_to_b, delete_files_from_b,
-                         move_files_in_b, update_files_a_to_b)
+from .filesystem import (
+    copy_files_from_a_to_b,
+    delete_files_from_b,
+    move_files_in_b,
+    update_files_a_to_b,
+)
 from .report import Report
 
 
@@ -124,9 +128,7 @@ class BackupManager:
         """
         if files_to_delete is None:
             files_to_delete = self.report["removed_files"]
-        failed = delete_files_from_b(
-            self.backup_directory, files_to_delete
-        )
+        failed = delete_files_from_b(self.backup_directory, files_to_delete)
 
         failed_set = set(failed)
         deleted_set = set(files_to_delete) - failed_set
@@ -154,7 +156,9 @@ class BackupManager:
         self.source_directory = srcdir
         self.backup_directory = bakdir
         start = time.time()
-        self.report = self.compare_directories(self.source_directory, self.backup_directory).examine()
+        self.report = self.compare_directories(
+            self.source_directory, self.backup_directory
+        ).examine()
         runtime = time.time() - start
         logging.info("runtime: %d seconds", runtime)
         self.log(self.report, True)
