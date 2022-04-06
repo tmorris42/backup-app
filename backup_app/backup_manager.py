@@ -4,7 +4,10 @@ Compare the current state of a source folder with the current state of the
 backup folder.
 """
 
+import filecmp
+import logging
 import os
+import time
 from datetime import datetime
 from pprint import pprint
 
@@ -149,3 +152,85 @@ class BackupManager:
         for file in moved_set:
             self.report["moved_files"].remove(file)
         return failed
+
+    def scan(self, srcdir, bakdir):
+        """Scan the source and backup directories and display results."""
+        self.source_directory = srcdir
+        self.backup_directory = bakdir
+        start = time.time()
+        self.report = self.compare_directories(self.source_directory, self.backup_directory).examine()
+        runtime = time.time() - start
+        logging.info("runtime: %d seconds", runtime)
+        self.log(self.report, True)
+
+    def compare_directories(self, dira, dirb, recursing=False, shallow=True):
+        """Compare source and backup directories."""
+        if not dira or not dirb:
+            logging.error("Invalid comparison directories")
+            return
+        simple_report = Report({}, source=dira, backup=dirb)
+        # compare directories (This uses shallow comparison!!)
+        dirs_cmp = filecmp.dircmp(dira, dirb)
+        # Identify files that are only in dira
+        simple_report["added_files"] = dirs_cmp.left_only[:]
+        # Identify files that are only in dirb
+        simple_report["removed_files"] = dirs_cmp.right_only[:]
+        # For files in both, do a deep comparison using filecmp
+        (
+            simple_report["matched_files"],
+            simple_report["mismatched_files"],
+            simple_report["errors"],
+        ) = filecmp.cmpfiles(
+            dira, dirb, dirs_cmp.common_files, shallow=shallow
+        )
+
+        # Check subfolders
+        sub_report = self.check_subfolders(
+            dira, dirb, dirs_cmp.common_dirs, recursing
+        )
+        keys = (
+            "added_files",
+            "removed_files",
+            "matched_files",
+            "mismatched_files",
+            "errors",
+        )
+        for key in keys:
+            for item in sub_report[key]:
+                simple_report[key].append(item)
+        return simple_report
+
+    def check_subfolders(self, dira, dirb, common_dirs, recursing=False):
+        """Check subfolders of common directories."""
+        report = {
+            "added_files": [],
+            "removed_files": [],
+            "matched_files": [],
+            "mismatched_files": [],
+            "errors": [],
+        }
+        for common_dir in common_dirs:
+            new_dira = os.path.join(dira, common_dir)
+            new_dirb = os.path.join(dirb, common_dir)
+            sub_report = self.compare_directories(
+                new_dira, new_dirb, recursing=True
+            )
+            if not recursing:
+                logging.info("Checking subfolder\n\n\t%s\n", new_dira)
+
+            # add sub report to overall report
+            for key in (
+                "added_files",
+                "removed_files",
+                "matched_files",
+                "mismatched_files",
+                "errors",
+            ):
+                for item in sub_report[key]:
+                    report[key].append(os.path.join(common_dir, item))
+
+        #    for adir in dirs_cmp.left_only:
+        #        if os.path.isdir(adir):
+        #            for sub in [x[0] for x in os.walk(adir)]:
+        #                report['added_files'].append(sub)
+        return report

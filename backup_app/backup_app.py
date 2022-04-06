@@ -277,84 +277,14 @@ class App:
     def scan(self):
         """Scan the source and backup directories and display results."""
         start = time.time()
-        self.manager.report = self.compare_directories().examine()
+        # self.manager.report = self.compare_directories().examine()
+        srcdir = self.source_dir_var.get()
+        bakdir = self.backup_dir_var.get()
+        self.manager.scan(srcdir, bakdir)
         self.redraw()
         runtime = time.time() - start
         logging.info("runtime: %d seconds", runtime)
         self.log(self.manager.report, True)
-
-    def check_subfolders(self, dira, dirb, common_dirs, recursing=False):
-        """Check subfolders of common directories."""
-        report = {
-            "added_files": [],
-            "removed_files": [],
-            "matched_files": [],
-            "mismatched_files": [],
-            "errors": [],
-        }
-        for common_dir in common_dirs:
-            new_dira = os.path.join(dira, common_dir)
-            new_dirb = os.path.join(dirb, common_dir)
-            sub_report = self.compare_directories(
-                new_dira, new_dirb, recursing=True
-            )
-            if not recursing:
-                logging.info("Checking subfolder\n\n\t%s\n", new_dira)
-
-            # add sub report to overall report
-            for key in (
-                "added_files",
-                "removed_files",
-                "matched_files",
-                "mismatched_files",
-                "errors",
-            ):
-                for item in sub_report[key]:
-                    report[key].append(os.path.join(common_dir, item))
-
-        #    for adir in dirs_cmp.left_only:
-        #        if os.path.isdir(adir):
-        #            for sub in [x[0] for x in os.walk(adir)]:
-        #                report['added_files'].append(sub)
-        return report
-
-    def compare_directories(self, dira=None, dirb=None, recursing=False):
-        """Compare source and backup directories."""
-        if not dira:
-            dira = self.source_dir_var.get()
-        if not dirb:
-            dirb = self.backup_dir_var.get()
-        simple_report = Report({}, source=dira, backup=dirb)
-        # compare directories (This uses shallow comparison!!)
-        dirs_cmp = filecmp.dircmp(dira, dirb)
-        # Identify files that are only in dira
-        simple_report["added_files"] = dirs_cmp.left_only[:]
-        # Identify files that are only in dirb
-        simple_report["removed_files"] = dirs_cmp.right_only[:]
-        # For files in both, do a deep comparison using filecmp
-        (
-            simple_report["matched_files"],
-            simple_report["mismatched_files"],
-            simple_report["errors"],
-        ) = filecmp.cmpfiles(
-            dira, dirb, dirs_cmp.common_files, shallow=SHALLOW
-        )
-
-        # Check subfolders
-        sub_report = self.check_subfolders(
-            dira, dirb, dirs_cmp.common_dirs, recursing
-        )
-        keys = (
-            "added_files",
-            "removed_files",
-            "matched_files",
-            "mismatched_files",
-            "errors",
-        )
-        for key in keys:
-            for item in sub_report[key]:
-                simple_report[key].append(item)
-        return simple_report
 
     def display_examined_results(self):
         """Display the results in the display lists"""
