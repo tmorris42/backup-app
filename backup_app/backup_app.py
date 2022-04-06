@@ -36,7 +36,7 @@ class DirectoryFrame(tk.Frame):
     def __init__(self, parent, *args, **kwargs):
         tk.Frame.__init__(self, parent, *args, **kwargs)
         self.parent = parent
-        self.directory_var = tk.StringVar()
+        self._directory_var = tk.StringVar()
 
         self.listing = tk.Listbox(master=self, selectmode=tk.EXTENDED)
 
@@ -48,8 +48,9 @@ class DirectoryFrame(tk.Frame):
         Hovertip(open_folder_button, "Open folder")
 
         directory_label = tk.Entry(
-            self, textvariable=self.directory_var, state="readonly"
+            self, textvariable=self._directory_var, state="readonly"
         )
+        self.directory_label_ht = Hovertip(directory_label, self.directory)
 
         open_folder_button.grid(row=0, column=0, sticky="nw")
         directory_label.grid(row=0, column=1, sticky="nsew")
@@ -58,19 +59,26 @@ class DirectoryFrame(tk.Frame):
         self.grid_rowconfigure(index=1, weight=1)
         self.grid_columnconfigure(index=1, weight=1)
 
+    @property
+    def directory(self):
+        return self._directory_var.get()
+
+    @directory.setter
+    def directory(self, folderpath):
+        self.directory_label_ht.text = folderpath
+        return self._directory_var.set(folderpath)
+
     def open_directory(self):
         """Select a directory."""
-
-        dir_var = self.directory_var
 
         dir_name = filedialog.askdirectory(
             parent=self.master,
             title="Open Folder...",
-            initialdir=dir_var.get(),
+            initialdir=self.directory,
         )
         dir_name = os.path.normpath(dir_name)
         if dir_name:
-            dir_var.set(dir_name)
+            self.directory = dir_name
             self.master.finish_open()
 
 
@@ -86,12 +94,12 @@ class App(tk.Frame):
 
         self.make_window()
 
-        self.source_panel.directory_var.set(srcdir)
-        self.backup_panel.directory_var.set(bakdir)
+        self.source_panel.directory = srcdir
+        self.backup_panel.directory = bakdir
         self.log(
             (
-                self.source_panel.directory_var.get(),
-                self.backup_panel.directory_var.get(),
+                self.source_panel.directory,
+                self.backup_panel.directory,
             ),
             True,
         )
@@ -115,10 +123,10 @@ class App(tk.Frame):
         IN DEVELOPMENT
         """
         if which == "source":
-            folder = self.source_panel.directory_var.get()
+            folder = self.source_panel.directory
             display_pane = self.source_panel.listing
         elif which == "backup":
-            folder = self.backup_panel.directory_var.get()
+            folder = self.backup_panel.directory
             display_pane = self.backup_panel.listing
         elif which == "both":
             self.show_tree("source")
@@ -247,11 +255,11 @@ class App(tk.Frame):
 
     def finish_open(self):
         """Clean up after selecting new folder."""
-        self.manager.source_directory = self.source_panel.directory_var.get()
-        self.manager.backup_directory = self.backup_panel.directory_var.get()
+        self.manager.source_directory = self.source_panel.directory
+        self.manager.backup_directory = self.backup_panel.directory
         with open("last_dirs.log", "w", encoding="utf-8") as log:
-            log.write(self.source_panel.directory_var.get() + "\n")
-            log.write(self.backup_panel.directory_var.get() + "\n")
+            log.write(self.source_panel.directory + "\n")
+            log.write(self.backup_panel.directory + "\n")
         self.manager.report.items.clear()
         # self.show_tree("both")
 
@@ -259,8 +267,8 @@ class App(tk.Frame):
         """Scan the source and backup directories and display results."""
         start = time.time()
         # self.manager.report = self.compare_directories().examine()
-        srcdir = self.source_panel.directory_var.get()
-        bakdir = self.backup_panel.directory_var.get()
+        srcdir = self.source_panel.directory
+        bakdir = self.backup_panel.directory
         self.manager.scan(srcdir, bakdir)
         runtime = time.time() - start
         logging.info("runtime: %d seconds", runtime)
