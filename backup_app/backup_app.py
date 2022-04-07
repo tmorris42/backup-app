@@ -353,6 +353,10 @@ def main():
     logger.debug("Starting Backup Directory = %s", backup_directory)
 
     root = tk.Tk()
+    screen_width, screen_height = root.winfo_screenwidth(), root.winfo_screenheight()
+    width, height = min(screen_width, 800), min(screen_height, 400)
+    center_x, center_y = int(screen_width / 2 - width / 2), 50
+    root.geometry(f"{width}x{height}+{center_x}+{center_y}")
     app = App(root, starting_directory, backup_directory, log_to_file=True)
     root.mainloop()
     del app
