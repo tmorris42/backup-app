@@ -6,6 +6,7 @@ Compare the current state of a source folder with the current state of the
 backup folder.
 """
 
+import functools
 import logging
 import os
 import time
@@ -116,6 +117,14 @@ class App(tk.Frame):
             self.display_examined_results()
         self.after(200, self.redraw)
 
+    def launch_task(task_function):
+        @functools.wraps(task_function)
+        def wrapper(*args, **kwargs):
+            self = args[0]
+            self.logger.debug("Launching Task- %s.%s", self.__class__.__name__, task_function.__name__)
+            return task_function(*args, **kwargs)
+        return wrapper
+
     def log(self, msg, pretty=False):
         """Log messages to the session log file."""
         self.manager.log(msg, pretty)
@@ -161,6 +170,7 @@ class App(tk.Frame):
         failed = self.manager.copy_added_file(filename)
         self.logger.error("The following files failed: %s", failed)
 
+    @launch_task
     def copy_selected(self):
         """Copy selected files in the changed files list to the backup folder.
 
@@ -172,6 +182,7 @@ class App(tk.Frame):
         for item in items:
             self.select_file_source(index=item)
 
+    @launch_task
     def copy_all_new_files(self):
         """Copy all new files in the changed files list to backup folder."""
         self.manager.copy_added_files()
@@ -206,14 +217,17 @@ class App(tk.Frame):
             failed = self.manager.delete_files([filename])
         self.logger.error("The following files failed: %s", failed)
 
+    @launch_task
     def update_files(self):
         """Command function to call update_files_a_to_b."""
         self.manager.update_files()
 
+    @launch_task
     def delete_files(self):
         """Command function to call delete_files_from_b."""
         self.manager.delete_files()
 
+    @launch_task
     def move_files(self):
         """Command function to call move_files_in_b."""
         self.manager.move_files()
@@ -268,8 +282,10 @@ class App(tk.Frame):
         self.manager.report.items.clear()
         # self.show_tree("both")
 
+    @launch_task
     def scan(self):
         """Scan the source and backup directories and display results."""
+        self.logger.debug("Running App.scan()")
         start = time.time()
         # self.manager.report = self.compare_directories().examine()
         srcdir = self.source_panel.directory
