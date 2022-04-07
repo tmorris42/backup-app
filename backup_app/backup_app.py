@@ -170,7 +170,8 @@ class App(tk.Frame):
             index = self.source_panel.listing.nearest(event.y)
         filename = self.source_panel.listing.get(index)
         failed = self.manager.copy_added_file(filename)
-        self.logger.error("The following files failed: %s", failed)
+        if failed:
+            self.logger.error("The following files failed: %s", failed)
 
     @launch_task
     def copy_selected(self):
@@ -218,7 +219,8 @@ class App(tk.Frame):
             )
         elif index < removed_len:
             failed = self.manager.delete_files([filename])
-        self.logger.error("The following files failed: %s", failed)
+        if failed:
+            self.logger.error("The following files failed: %s", failed)
 
     @launch_task
     def update_files(self):
