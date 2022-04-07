@@ -112,17 +112,18 @@ class App(tk.Frame):
 
     def redraw(self):
         """Redraw the GUI."""
-        # self.logger.info("Redrawing!")
+        self.logger.debug("Redrawing!")
         if self.manager and self.manager.report:
             self.display_examined_results()
-        self.after(200, self.redraw)
 
     def launch_task(task_function):
         @functools.wraps(task_function)
         def wrapper(*args, **kwargs):
             self = args[0]
             self.logger.debug("Launching Task- %s.%s", self.__class__.__name__, task_function.__name__)
-            return task_function(*args, **kwargs)
+            ret = task_function(*args, **kwargs)
+            self.redraw()
+            return ret
         return wrapper
 
     def log(self, msg, pretty=False):
@@ -158,6 +159,7 @@ class App(tk.Frame):
             display_pane.insert(i, display_name)
             i += 1
 
+    @launch_task
     def select_file_source(self, event=None, index=None):
         """Select a file from the changed files list in the source folder.
 
@@ -187,6 +189,7 @@ class App(tk.Frame):
         """Copy all new files in the changed files list to backup folder."""
         self.manager.copy_added_files()
 
+    @launch_task
     def select_file_backup(self, event=None, index=None):
         """Select a file from the changed files list in the backup folder.
 
