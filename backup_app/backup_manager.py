@@ -156,12 +156,9 @@ class BackupManager:
         """Scan the source and backup directories and display results."""
         self.source_directory = srcdir
         self.backup_directory = bakdir
-        start = time.time()
         self.report = self.compare_directories(
             self.source_directory, self.backup_directory
         ).examine()
-        runtime = time.time() - start
-        self.logger.info("runtime: %d seconds", runtime)
         self.log(self.report, True)
 
     def compare_directories(self, dira, dirb, recursing=False, shallow=True):

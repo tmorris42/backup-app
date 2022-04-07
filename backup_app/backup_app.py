@@ -121,7 +121,10 @@ class App(tk.Frame):
         def wrapper(*args, **kwargs):
             self = args[0]
             self.logger.debug("Launching Task- %s.%s", self.__class__.__name__, task_function.__name__)
+            start = time.time()
             ret = task_function(*args, **kwargs)
+            runtime = time.time() - start
+            self.logger.info("runtime = %d seconds", runtime)
             self.redraw()
             return ret
         return wrapper
@@ -290,15 +293,9 @@ class App(tk.Frame):
     @launch_task
     def scan(self):
         """Scan the source and backup directories and display results."""
-        self.logger.debug("Running App.scan()")
-        start = time.time()
-        # self.manager.report = self.compare_directories().examine()
         srcdir = self.source_panel.directory
         bakdir = self.backup_panel.directory
         self.manager.scan(srcdir, bakdir)
-        runtime = time.time() - start
-        self.logger.info("runtime: %d seconds", runtime)
-        self.log(self.manager.report, True)
 
     def display_examined_results(self):
         """Display the results in the display lists"""
