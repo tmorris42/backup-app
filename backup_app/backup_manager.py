@@ -7,7 +7,6 @@ backup folder.
 import filecmp
 import logging
 import os
-import time
 from datetime import datetime
 from pprint import pprint
 

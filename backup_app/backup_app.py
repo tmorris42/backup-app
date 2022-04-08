@@ -85,6 +85,27 @@ class DirectoryFrame(tk.Frame):
             self.master.finish_open()
 
 
+def launch_task(task_function):
+    """Decorator for launching tasks from the console"""
+
+    @functools.wraps(task_function)
+    def wrapper(*args, **kwargs):
+        self = args[0]
+        self.logger.debug(
+            "Launching Task- %s.%s",
+            self.__class__.__name__,
+            task_function.__name__,
+        )
+        start = time.time()
+        ret = task_function(*args, **kwargs)
+        runtime = time.time() - start
+        self.logger.info("runtime = %d seconds", runtime)
+        self.redraw()
+        return ret
+
+    return wrapper
+
+
 class App(tk.Frame):
     """App class is used to hold the backup app window and methods."""
 
@@ -115,19 +136,6 @@ class App(tk.Frame):
         self.logger.debug("Redrawing!")
         if self.manager and self.manager.report:
             self.display_examined_results()
-
-    def launch_task(task_function):
-        @functools.wraps(task_function)
-        def wrapper(*args, **kwargs):
-            self = args[0]
-            self.logger.debug("Launching Task- %s.%s", self.__class__.__name__, task_function.__name__)
-            start = time.time()
-            ret = task_function(*args, **kwargs)
-            runtime = time.time() - start
-            self.logger.info("runtime = %d seconds", runtime)
-            self.redraw()
-            return ret
-        return wrapper
 
     def log(self, msg, pretty=False):
         """Log messages to the session log file."""
@@ -353,7 +361,8 @@ def main():
     logger.debug("Starting Backup Directory = %s", backup_directory)
 
     root = tk.Tk()
-    screen_width, screen_height = root.winfo_screenwidth(), root.winfo_screenheight()
+    screen_width = root.winfo_screenwidth()
+    screen_height = root.winfo_screenheight()
     width, height = min(screen_width, 800), min(screen_height, 400)
     center_x, center_y = int(screen_width / 2 - width / 2), 50
     root.geometry(f"{width}x{height}+{center_x}+{center_y}")
